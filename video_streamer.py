@@ -19,6 +19,20 @@ from profiles.profile_loader import load_profile
 
 
 # =========================
+# STREAM PERFORMANCE SETTINGS
+# =========================
+
+# Resize video frames before YOLO detection and before browser streaming.
+# This makes Render CPU streaming much faster.
+#
+# Recommended values:
+# 480 = faster, lower quality
+# 640 = good balance
+# 720 = better quality, slower
+STREAM_FRAME_WIDTH = 640
+
+
+# =========================
 # PROFILE / MODEL SETUP
 # =========================
 
@@ -34,6 +48,20 @@ model = YOLO(MODEL_NAME)
 # =========================
 # HELPER FUNCTIONS
 # =========================
+
+def resize_frame_for_streaming(frame):
+    height, width = frame.shape[:2]
+
+    if width <= STREAM_FRAME_WIDTH:
+        return frame
+
+    scale_ratio = STREAM_FRAME_WIDTH / width
+    target_height = int(height * scale_ratio)
+
+    resized_frame = cv2.resize(frame, (STREAM_FRAME_WIDTH, target_height))
+
+    return resized_frame
+
 
 def get_center_point(x1, y1, x2, y2):
     center_x = int((x1 + x2) / 2)
@@ -131,6 +159,7 @@ def build_run_summary(
         "minimum_confidence": MIN_CONFIDENCE,
         "process_every_n_frames": PROCESS_EVERY_N_FRAMES,
         "max_distance_between_persons": MAX_DISTANCE_BETWEEN_PERSONS,
+        "stream_frame_width": STREAM_FRAME_WIDTH,
         "target_class_ids": TARGET_CLASS_IDS,
         "person_class_id": PERSON_CLASS_ID,
         "frames_read": frame_number,
@@ -201,6 +230,10 @@ def generate_annotated_frames():
 
             if not success:
                 break
+
+            # Resize before YOLO and before streaming.
+            # This is important for Render performance.
+            frame = resize_frame_for_streaming(frame)
 
             frame_number += 1
             annotated_frame = frame.copy()
@@ -319,6 +352,13 @@ def generate_annotated_frames():
                 f"Processing every {PROCESS_EVERY_N_FRAMES} frame(s)",
                 20,
                 240
+            )
+
+            draw_screen_text(
+                annotated_frame,
+                f"Stream width: {STREAM_FRAME_WIDTH}",
+                20,
+                280
             )
 
             success, encoded_image = cv2.imencode(".jpg", annotated_frame)
