@@ -32,7 +32,7 @@ MIN_CONFIDENCE = 0.50
 # 1 = every frame, best accuracy
 # 2 = every other frame
 # 4 = every 4th frame
-PROCESS_EVERY_N_FRAMES = 30
+PROCESS_EVERY_N_FRAMES = 90
 
 # How close a new person detection must be to an existing person
 # to be considered the same person
