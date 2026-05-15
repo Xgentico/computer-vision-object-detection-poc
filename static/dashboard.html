@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Object Detection Platform</title>
+
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --sidebar: #111827;
+            --text: #172033;
+            --muted: #667085;
+            --card: #ffffff;
+            --border: #e7eaf0;
+
+            --blue: #2563eb;
+            --blue-soft: #e8f1ff;
+
+            --green: #16a34a;
+            --green-soft: #e9f8ef;
+
+            --peach: #f97316;
+            --peach-soft: #fff1e8;
+
+            --red: #dc2626;
+
+            --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background:
+                radial-gradient(circle at top left, #fff1e8 0, transparent 32%),
+                radial-gradient(circle at top right, #e8f1ff 0, transparent 30%),
+                var(--bg);
+            color: var(--text);
+        }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #111827, #1f2937);
+            color: white;
+            padding: 24px 18px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .brand {
+            margin-bottom: 30px;
+        }
+
+        .brand-title {
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.15;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-top: 10px;
+            line-height: 1.45;
+        }
+
+        .nav-button {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #d1d5db;
+            text-align: left;
+            padding: 13px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .nav-button.active {
+            background: white;
+            color: #111827;
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 24px;
+            left: 18px;
+            right: 18px;
+            color: #cbd5e1;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .main {
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            padding: 30px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 34px;
+            letter-spacing: -0.8px;
+        }
+
+        .page-subtitle {
+            margin-top: 8px;
+            color: var(--muted);
+            max-width: 950px;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        .refresh-button {
+            padding: 12px 18px;
+            border: none;
+            background: var(--blue);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+        }
+
+        .refresh-button:hover {
+            background: #1d4ed8;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 18px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            margin: 0 0 15px 0;
+            font-size: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        .span-4 { grid-column: span 4; }
+        .span-6 { grid-column: span 6; }
+        .span-8 { grid-column: span 8; }
+        .span-12 { grid-column: span 12; }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #344054;
+            font-weight: 900;
+        }
+
+        .metric-value {
+            color: #475467;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .pill-green {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .pill-gray {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .status-ok {
+            color: var(--green);
+            font-weight: 900;
+        }
+
+        .status-error {
+            color: var(--red);
+            font-weight: 900;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #344054;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #fff7ed;
+        }
+
+        .demo-story {
+            color: var(--muted);
+            line-height: 1.55;
+            font-size: 14px;
+        }
+
+        .demo-story strong {
+            color: var(--text);
+        }
+
+        .soft-card-blue {
+            background: linear-gradient(135deg, var(--blue-soft), #ffffff);
+        }
+
+        .soft-card-green {
+            background: linear-gradient(135deg, var(--green-soft), #ffffff);
+        }
+
+        .soft-card-peach {
+            background: linear-gradient(135deg, var(--peach-soft), #ffffff);
+        }
+
+        .note-box {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .video-stream-wrapper {
+            width: 100%;
+            background: #111827;
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .video-stream {
+            display: block;
+            width: 100%;
+            max-height: 720px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #000;
+        }
+
+        .stream-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .secondary-button {
+            padding: 11px 15px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .secondary-button:hover {
+            background: #f8fafc;
+        }
+
+        @media (max-width: 1100px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .sidebar-footer {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                margin-top: 20px;
+            }
+
+            .app {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .span-4,
+            .span-6,
+            .span-8,
+            .span-12 {
+                grid-column: span 12;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-title">Object Detection Platform</div>
+                <div class="brand-subtitle">
+                    Modular computer vision POC for configurable detection profiles, browser video streaming, and run analytics.
+                </div>
+            </div>
+
+            <button class="nav-button active" id="navHistory" onclick="showSection('history')">Run History</button>
+            <button class="nav-button" id="navVideo" onclick="showSection('video')">Video Stream</button>
+            <button class="nav-button" id="navSettings" onclick="showSection('settings')">Settings</button>
+
+            <div class="sidebar-footer">
+                <div id="apiStatusFooter">Checking API...</div>
+                <br>
+                Local demo mode<br>
+                FastAPI + YOLOv8 + OpenCV
+            </div>
+        </aside>
+
+        <main class="main">
+
+            <div class="topbar">
+                <div>
+                    <h1 class="page-title" id="pageTitle">Run History Dashboard</h1>
+                    <div class="page-subtitle" id="pageSubtitle">
+                        Executive view of detection runs, profile settings, frame sampling, processing workload, and model output summaries.
+                    </div>
+                </div>
+
+                <button class="refresh-button" onclick="loadDashboard()">Refresh Data</button>
+            </div>
+
+            <section id="historySection" class="section active">
+                <div class="grid">
+
+                    <div class="card span-12">
+                        <h2>Run History</h2>
+                        <div id="runHistoryCard">Loading...</div>
+                    </div>
+
+                    <div class="card span-8 soft-card-green">
+                        <h2>Why This Matters</h2>
+                        <div class="demo-story">
+                            <p>
+                                <strong>This proof of concept creates repeatable computer vision runs.</strong>
+                                Each run stores the active detection profile, model, confidence threshold, frame sampling rate,
+                                processing workload, and detection results.
+                            </p>
+                            <p>
+                                The run history makes it easy to compare how different settings affect speed and detection coverage.
+                                For example, processing every frame detects more unique persons, while processing every 40th frame
+                                is faster but misses more objects.
+                            </p>
+                            <p>
+                                The current driving profile can detect people, vehicles, bicycles, traffic lights, and stop signs.
+                                The same architecture supports future profiles such as airport monitoring, drone detection with
+                                a specialized model, and secure facility observation.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card span-4 soft-card-peach">
+                        <h2>Planned Drill-Down</h2>
+                        <div class="note-box">
+                            The selected-run detail view has been intentionally removed from this demo screen to keep the interface simple.
+                            We should add it back later after we decide the right drill-down experience for run comparison, accuracy testing,
+                            and performance analysis.
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <section id="videoSection" class="section">
+                <div class="grid">
+
+                    <div class="card span-12">
+                        <h2>Live Browser Video Stream</h2>
+                        <div class="note-box">
+                            This stream is generated by FastAPI. OpenCV reads the MP4 video, YOLO applies detection,
+                            and the API streams annotated frames to the browser as MJPEG.
+                        </div>
+
+                        <div class="stream-actions">
+                            <button class="refresh-button" onclick="startVideoStream()">Start / Restart Stream</button>
+                            <button class="secondary-button" onclick="stopVideoStream()">Stop Stream</button>
+                        </div>
+                    </div>
+
+                    <div class="card span-12">
+                        <div class="video-stream-wrapper">
+                            <img id="videoStreamImage" class="video-stream" alt="Annotated video stream will appear here">
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <section id="settingsSection" class="section">
+                <div class="grid">
+
+                    <div class="card span-6 soft-card-blue">
+                        <h2>Current Configuration</h2>
+                        <div id="configSummaryCard">Loading...</div>
+                    </div>
+
+                    <div class="card span-6 soft-card-green">
+                        <h2>Profile and Model Notes</h2>
+                        <div class="metric">
+                            <span class="metric-label">Driving Profile</span>
+                            <span class="metric-value">person, bicycle, car, motorcycle, bus, truck, traffic light, stop sign</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Airport Profile</span>
+                            <span class="metric-value">placeholder profile; true drone detection requires a drone-specific model</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Current Model</span>
+                            <span class="metric-value">YOLOv8 nano, lightweight and suitable for proof of concept testing</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Settings Mode</span>
+                            <span class="metric-value">read-only dashboard view; editing settings from UI is planned next</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        const API_BASE_URL = "";
+
+        function showSection(sectionName) {
+            document.getElementById("historySection").classList.remove("active");
+            document.getElementById("videoSection").classList.remove("active");
+            document.getElementById("settingsSection").classList.remove("active");
+
+            document.getElementById("navHistory").classList.remove("active");
+            document.getElementById("navVideo").classList.remove("active");
+            document.getElementById("navSettings").classList.remove("active");
+
+            if (sectionName === "history") {
+                document.getElementById("historySection").classList.add("active");
+                document.getElementById("navHistory").classList.add("active");
+                document.getElementById("pageTitle").innerText = "Run History Dashboard";
+                document.getElementById("pageSubtitle").innerText = "Executive view of detection runs, profile settings, frame sampling, processing workload, and model output summaries.";
+            }
+
+            if (sectionName === "video") {
+                document.getElementById("videoSection").classList.add("active");
+                document.getElementById("navVideo").classList.add("active");
+                document.getElementById("pageTitle").innerText = "Video Stream";
+                document.getElementById("pageSubtitle").innerText = "Browser-based stream of annotated video frames generated by the FastAPI backend.";
+            }
+
+            if (sectionName === "settings") {
+                document.getElementById("settingsSection").classList.add("active");
+                document.getElementById("navSettings").classList.add("active");
+                document.getElementById("pageTitle").innerText = "Settings";
+                document.getElementById("pageSubtitle").innerText = "Current detection configuration and profile details.";
+            }
+        }
+
+        async function fetchJson(endpoint) {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${endpoint}`);
+            }
+
+            return await response.json();
+        }
+
+        function safeValue(value, fallback = "not available") {
+            if (value === null || value === undefined || value === "") {
+                return fallback;
+            }
+
+            return value;
+        }
+
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === "") {
+                return "0";
+            }
+
+            return Number(value).toLocaleString();
+        }
+
+        function calculateTotalDetections(counts) {
+            if (!counts || Object.keys(counts).length === 0) {
+                return 0;
+            }
+
+            return Object.values(counts).reduce((total, count) => total + Number(count || 0), 0);
+        }
+
+        function createMetric(label, value) {
+            return `
+                <div class="metric">
+                    <span class="metric-label">${label}</span>
+                    <span class="metric-value">${safeValue(value)}</span>
+                </div>
+            `;
+        }
+
+        async function loadHealth() {
+            const footer = document.getElementById("apiStatusFooter");
+
+            try {
+                const data = await fetchJson("/health");
+                footer.innerHTML = `API Status: <span class="status-ok">${data.status}</span>`;
+            } catch (error) {
+                footer.innerHTML = `API Status: <span class="status-error">error</span>`;
+            }
+        }
+
+        async function loadConfig() {
+            const configDiv = document.getElementById("configSummaryCard");
+
+            try {
+                const data = await fetchJson("/config");
+
+                configDiv.innerHTML =
+                    createMetric("Run Name", data.run_name) +
+                    createMetric("Active Profile", `<span class="pill">${data.active_profile}</span>`) +
+                    createMetric("Detection Profile", `<span class="pill pill-green">${data.detection_profile}</span>`) +
+                    createMetric("Video Path", data.video_path) +
+                    createMetric("Model", data.model_name) +
+                    createMetric("Confidence", data.minimum_confidence) +
+                    createMetric("Frame Sampling", `Every ${data.process_every_n_frames} frame(s)`) +
+                    createMetric("Target Class IDs", data.target_class_ids.join(", "));
+            } catch (error) {
+                configDiv.innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
+        }
+
+        async function loadRunHistory() {
+            const historyDiv = document.getElementById("runHistoryCard");
+
+            try {
+                const data = await fetchJson("/runs");
+
+                if (data.status !== "ok") {
+                    historyDiv.innerHTML = `<p>${data.message}</p>`;
+                    return;
+                }
+
+                let html = `<p>Total runs found: ${data.run_count}.</p>`;
+                html += "<table>";
+                html += `
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Run Name</th>
+                        <th>Active Profile</th>
+                        <th>Detection Profile</th>
+                        <th>Model</th>
+                        <th>Frame Skip</th>
+                        <th>Frames Processed</th>
+                        <th>Unique Persons</th>
+                        <th>Total Detections</th>
+                        <th>Top Counts</th>
+                    </tr>
+                `;
+
+                for (const run of data.runs) {
+                    const counts = run.total_detection_counts || {};
+                    const totalDetections = calculateTotalDetections(counts);
+
+                    const topCounts = Object.entries(counts)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .map(([name, count]) => `${name}: ${formatNumber(count)}`)
+                        .join(", ");
+
+                    html += `
+                        <tr>
+                            <td>${safeValue(run.run_timestamp, "")}</td>
+                            <td>${safeValue(run.run_name, "")}</td>
+                            <td><span class="pill pill-gray">${safeValue(run.active_profile, "")}</span></td>
+                            <td><span class="pill pill-green">${safeValue(run.detection_profile, "")}</span></td>
+                            <td>${safeValue(run.model_name, "")}</td>
+                            <td>${safeValue(run.process_every_n_frames, "")}</td>
+                            <td>${formatNumber(run.frames_processed_by_yolo)}</td>
+                            <td><strong>${formatNumber(run.unique_persons)}</strong></td>
+                            <td>${formatNumber(totalDetections)}</td>
+                            <td>${topCounts}</td>
+                        </tr>
+                    `;
+                }
+
+                html += "</table>";
+
+                historyDiv.innerHTML = html;
+
+            } catch (error) {
+                historyDiv.innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
+        }
+
+        function startVideoStream() {
+            const image = document.getElementById("videoStreamImage");
+
+            image.src = `${API_BASE_URL}/video-stream?time=${new Date().getTime()}`;
+        }
+
+        function stopVideoStream() {
+            const image = document.getElementById("videoStreamImage");
+
+            image.src = "";
+        }
+
+        async function loadDashboard() {
+            await loadHealth();
+            await loadConfig();
+            await loadRunHistory();
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

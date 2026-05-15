@@ -1,0 +1,5 @@
+DETECTION_PROFILE = "airport"
+
+TARGET_CLASS_IDS = [0, 2, 5, 7, 4]
+
+PERSON_CLASS_ID = 0

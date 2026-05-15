@@ -1,0 +1,56 @@
+# =========================
+# Python cache / compiled files
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Virtual environment
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# IDE / editor files
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Local output files
+# =========================
+outputs/
+*.json
+
+# Keep requirements and config files tracked
+!requirements.txt
+!config.py
+
+# =========================
+# Downloaded model files
+# =========================
+*.pt
+
+# =========================
+# Temporary / misc
+# =========================
+*.tmp
+*.bak
