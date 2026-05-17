@@ -438,6 +438,7 @@
             max-height: 520px;
             overflow-y: auto;
             padding-right: 6px;
+            margin-top: 14px;
         }
 
         .warning-item {
@@ -467,6 +468,20 @@
             padding: 16px;
             border-radius: 14px;
             line-height: 1.5;
+        }
+
+        .speech-toggle-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 14px;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .speech-toggle-row input {
+            width: auto;
         }
 
         @media (max-width: 1100px) {
@@ -512,7 +527,7 @@
             <div class="brand">
                 <div class="brand-title">Object Detection Platform</div>
                 <div class="brand-subtitle">
-                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, warnings, and run analytics.
+                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, spoken warnings, and run analytics.
                 </div>
             </div>
 
@@ -623,12 +638,17 @@
                         <h2>Live Browser Video Stream</h2>
                         <div class="note-box">
                             OpenCV reads the selected MP4 video, YOLO applies detection, and the stream displays annotated frames.
-                            Warning events appear in the panel beside the video.
+                            Warning events appear in the panel beside the video and are spoken by the browser.
                         </div>
 
                         <div class="stream-actions">
                             <button class="refresh-button" onclick="startVideoStream()">Start / Restart Stream</button>
                             <button class="danger-button" onclick="stopVideoStream()">Stop Stream</button>
+                        </div>
+
+                        <div class="speech-toggle-row">
+                            <input id="liveSpeechToggle" type="checkbox" checked onchange="toggleLiveSpeech()">
+                            <label for="liveSpeechToggle" style="margin: 0;">Speak live warnings</label>
                         </div>
 
                         <div class="settings-preview" id="activeRuntimeSettingsCard">
@@ -646,7 +666,7 @@
                     <div class="card span-5 soft-card-peach">
                         <h2>Live Warnings</h2>
                         <div class="note-box">
-                            Warnings appear only when a new unique person is detected.
+                            Warnings appear only when a new unique person is detected. The browser speaks each new warning once.
                         </div>
 
                         <div class="button-row">
@@ -724,6 +744,10 @@
                             <span class="metric-value">Only when a new unique person is detected</span>
                         </div>
                         <div class="metric">
+                            <span class="metric-label">Live Voice</span>
+                            <span class="metric-value">Browser speech synthesis</span>
+                        </div>
+                        <div class="metric">
                             <span class="metric-label">Runtime Settings</span>
                             <span class="metric-value">Persisted to runtime_settings.json</span>
                         </div>
@@ -740,6 +764,9 @@
 
         let currentRuntimeSettings = null;
         let warningPollInterval = null;
+        let spokenWarningKeys = new Set();
+        let isStreamActive = false;
+        let liveSpeechEnabled = true;
 
         function showSection(sectionName) {
             document.getElementById("historySection").classList.remove("active");
@@ -761,7 +788,7 @@
                 document.getElementById("videoSection").classList.add("active");
                 document.getElementById("navVideo").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Video Stream";
-                document.getElementById("pageSubtitle").innerText = "Upload or select an MP4, then stream annotated video frames with live warnings.";
+                document.getElementById("pageSubtitle").innerText = "Upload or select an MP4, then stream annotated video frames with live spoken warnings.";
             }
 
             if (sectionName === "settings") {
@@ -829,6 +856,34 @@
             }
 
             element.innerText = message;
+        }
+
+        function toggleLiveSpeech() {
+            const toggle = document.getElementById("liveSpeechToggle");
+            liveSpeechEnabled = toggle.checked;
+
+            if (!liveSpeechEnabled && "speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function speakLiveWarning(message) {
+            if (!liveSpeechEnabled) {
+                return;
+            }
+
+            if (!("speechSynthesis" in window)) {
+                console.warn("Browser speech synthesis is not supported.");
+                return;
+            }
+
+            const spokenMessage = new SpeechSynthesisUtterance(message);
+
+            spokenMessage.rate = 1.0;
+            spokenMessage.pitch = 1.0;
+            spokenMessage.volume = 1.0;
+
+            window.speechSynthesis.speak(spokenMessage);
         }
 
         async function loadHealth() {
@@ -1174,6 +1229,13 @@
                 const reversedWarnings = [...data.warnings].reverse();
 
                 for (const warning of reversedWarnings) {
+                    const warningKey = `${warning.person_id}-${warning.frame_number}`;
+
+                    if (isStreamActive && !spokenWarningKeys.has(warningKey)) {
+                        spokenWarningKeys.add(warningKey);
+                        speakLiveWarning("Warning. Person close by.");
+                    }
+
                     const confidence = warning.confidence !== undefined && warning.confidence !== null
                         ? Number(warning.confidence).toFixed(2)
                         : "n/a";
@@ -1209,6 +1271,8 @@
 
         async function clearWarnings() {
             try {
+                spokenWarningKeys.clear();
+
                 await fetchJson("/warnings/clear", {
                     method: "POST"
                 });
@@ -1231,6 +1295,9 @@
         function startVideoStream() {
             const image = document.getElementById("videoStreamImage");
 
+            isStreamActive = true;
+            spokenWarningKeys.clear();
+
             clearWarnings();
 
             image.src = `${API_BASE_URL}/video-stream?time=${new Date().getTime()}`;
@@ -1241,6 +1308,12 @@
         function stopVideoStream() {
             const image = document.getElementById("videoStreamImage");
             image.src = "";
+
+            isStreamActive = false;
+
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
 
             if (warningPollInterval) {
                 clearInterval(warningPollInterval);
