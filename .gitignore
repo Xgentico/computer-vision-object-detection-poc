@@ -43,7 +43,10 @@ outputs/
 # Keep requirements and config files tracked
 !requirements.txt
 !config.py
-
+# =========================
+# Uploaded user videos
+# =========================
+uploads/
 # =========================
 # Downloaded model files
 # =========================

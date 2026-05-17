@@ -2,7 +2,7 @@ import json
 import os
 import glob
 
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,15 +20,21 @@ from config import (
 from profiles.profile_loader import load_profile
 from video_streamer import generate_annotated_frames
 
+from runtime_settings import (
+    list_video_files,
+    load_runtime_settings,
+    update_runtime_settings,
+    save_uploaded_video
+)
+
 
 app = FastAPI(
     title="Computer Vision Object Detection API",
-    version="0.1.0"
+    version="0.2.0"
 )
 
-# Allow the local dashboard to call the API.
-# This is okay for local development.
-# Later, for production, we can lock this down.
+# Allow browser access during local development and Render testing.
+# Later we can restrict this.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -78,6 +84,48 @@ def get_config():
         "target_class_ids": profile.TARGET_CLASS_IDS,
         "person_class_id": profile.PERSON_CLASS_ID
     }
+
+
+# =========================
+# RUNTIME SETTINGS ENDPOINTS
+# =========================
+
+@app.get("/runtime-settings")
+def get_runtime_settings():
+    settings = load_runtime_settings()
+
+    return {
+        "status": "ok",
+        "settings": settings
+    }
+
+
+@app.post("/runtime-settings")
+def post_runtime_settings(settings: dict):
+    result = update_runtime_settings(settings)
+    return result
+
+
+# =========================
+# VIDEO FILE ENDPOINTS
+# =========================
+
+@app.get("/videos")
+def get_videos():
+    videos = list_video_files()
+
+    return {
+        "status": "ok",
+        "video_count": len(videos),
+        "videos": videos
+    }
+
+
+@app.post("/videos/upload")
+def upload_video(file: UploadFile = File(...)):
+    result = save_uploaded_video(file)
+
+    return result
 
 
 # =========================
@@ -137,6 +185,7 @@ def get_run_history():
                 "model_name": run_summary.get("model_name"),
                 "minimum_confidence": run_summary.get("minimum_confidence"),
                 "process_every_n_frames": run_summary.get("process_every_n_frames"),
+                "stream_frame_width": run_summary.get("stream_frame_width"),
                 "frames_read": run_summary.get("frames_read"),
                 "frames_processed_by_yolo": run_summary.get("frames_processed_by_yolo"),
                 "unique_persons": run_summary.get("unique_persons"),

@@ -23,6 +23,9 @@
             --peach-soft: #fff1e8;
 
             --red: #dc2626;
+            --red-soft: #fee2e2;
+
+            --yellow-soft: #fff8db;
 
             --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
             --radius: 18px;
@@ -152,6 +155,34 @@
             background: #1d4ed8;
         }
 
+        .secondary-button {
+            padding: 11px 15px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .secondary-button:hover {
+            background: #f8fafc;
+        }
+
+        .danger-button {
+            padding: 11px 15px;
+            border: 1px solid #fecaca;
+            background: var(--red-soft);
+            color: #991b1b;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .danger-button:hover {
+            background: #fecaca;
+        }
+
         .section {
             display: none;
         }
@@ -180,8 +211,15 @@
             letter-spacing: -0.3px;
         }
 
+        .card h3 {
+            margin: 18px 0 10px 0;
+            font-size: 16px;
+        }
+
         .span-4 { grid-column: span 4; }
+        .span-5 { grid-column: span 5; }
         .span-6 { grid-column: span 6; }
+        .span-7 { grid-column: span 7; }
         .span-8 { grid-column: span 8; }
         .span-12 { grid-column: span 12; }
 
@@ -239,6 +277,29 @@
             font-weight: 900;
         }
 
+        .status-message {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .status-message.ok {
+            background: var(--green-soft);
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .status-message.error {
+            background: var(--red-soft);
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -285,6 +346,10 @@
             background: linear-gradient(135deg, var(--peach-soft), #ffffff);
         }
 
+        .soft-card-yellow {
+            background: linear-gradient(135deg, var(--yellow-soft), #ffffff);
+        }
+
         .note-box {
             background: linear-gradient(135deg, #ffffff, #f8fafc);
             border: 1px solid var(--border);
@@ -319,18 +384,49 @@
             margin-top: 14px;
         }
 
-        .secondary-button {
-            padding: 11px 15px;
-            border: 1px solid var(--border);
-            background: white;
-            color: var(--text);
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 800;
+        .form-row {
+            margin-bottom: 14px;
         }
 
-        .secondary-button:hover {
-            background: #f8fafc;
+        label {
+            display: block;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            background: #ffffff;
+            color: var(--text);
+        }
+
+        input[type="file"] {
+            padding: 10px;
+        }
+
+        .form-help {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .settings-preview {
+            margin-top: 10px;
         }
 
         @media (max-width: 1100px) {
@@ -358,7 +454,9 @@
             }
 
             .span-4,
+            .span-5,
             .span-6,
+            .span-7,
             .span-8,
             .span-12 {
                 grid-column: span 12;
@@ -374,7 +472,7 @@
             <div class="brand">
                 <div class="brand-title">Object Detection Platform</div>
                 <div class="brand-subtitle">
-                    Modular computer vision POC for configurable detection profiles, browser video streaming, and run analytics.
+                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, and run analytics.
                 </div>
             </div>
 
@@ -385,7 +483,7 @@
             <div class="sidebar-footer">
                 <div id="apiStatusFooter">Checking API...</div>
                 <br>
-                Local demo mode<br>
+                Local / Render demo mode<br>
                 FastAPI + YOLOv8 + OpenCV
             </div>
         </aside>
@@ -403,6 +501,7 @@
                 <button class="refresh-button" onclick="loadDashboard()">Refresh Data</button>
             </div>
 
+            <!-- RUN HISTORY -->
             <section id="historySection" class="section active">
                 <div class="grid">
 
@@ -421,13 +520,12 @@
                             </p>
                             <p>
                                 The run history makes it easy to compare how different settings affect speed and detection coverage.
-                                For example, processing every frame detects more unique persons, while processing every 40th frame
-                                is faster but misses more objects.
+                                Users can upload MP4 files, select which video to process, and adjust confidence and frame sampling
+                                without editing Python code.
                             </p>
                             <p>
-                                The current driving profile can detect people, vehicles, bicycles, traffic lights, and stop signs.
-                                The same architecture supports future profiles such as airport monitoring, drone detection with
-                                a specialized model, and secure facility observation.
+                                For now, the active profile is the driving profile. It detects people, vehicles, bicycles,
+                                motorcycles, buses, trucks, traffic lights, and stop signs.
                             </p>
                         </div>
                     </div>
@@ -435,28 +533,76 @@
                     <div class="card span-4 soft-card-peach">
                         <h2>Planned Drill-Down</h2>
                         <div class="note-box">
-                            The selected-run detail view has been intentionally removed from this demo screen to keep the interface simple.
-                            We should add it back later after we decide the right drill-down experience for run comparison, accuracy testing,
-                            and performance analysis.
+                            The selected-run detail view is intentionally not shown yet. We should add it back later after we decide
+                            the right drill-down experience for run comparison, accuracy testing, and performance analysis.
                         </div>
                     </div>
 
                 </div>
             </section>
 
+            <!-- VIDEO STREAM -->
             <section id="videoSection" class="section">
                 <div class="grid">
 
-                    <div class="card span-12">
+                    <div class="card span-5 soft-card-blue">
+                        <h2>Video Source</h2>
+
+                        <div class="form-row">
+                            <label for="videoFileInput">Upload MP4</label>
+                            <input id="videoFileInput" type="file" accept=".mp4,video/mp4">
+                            <div class="form-help">
+                                Uploaded videos are saved in the uploads folder and become available in the video dropdown.
+                            </div>
+                        </div>
+
+                        <div class="button-row">
+                            <button class="refresh-button" onclick="uploadSelectedVideo()">Upload Video</button>
+                            <button class="secondary-button" onclick="loadVideos()">Refresh Video List</button>
+                        </div>
+
+                        <div id="uploadStatus" class="status-message">
+                            Select an MP4 file, then click Upload Video.
+                        </div>
+
+                        <h3>Select Video to Stream</h3>
+
+                        <div class="form-row">
+                            <label for="videoSelect">Selected Video</label>
+                            <select id="videoSelect"></select>
+                            <div class="form-help">
+                                Choose the MP4 file that the stream should use.
+                            </div>
+                        </div>
+
+                        <div class="button-row">
+                            <button class="refresh-button" onclick="saveSelectedVideoFromForm()">Use Selected Video</button>
+                        </div>
+
+                        <div id="videoSelectionStatus" class="status-message">
+                            Select a video and click Use Selected Video.
+                        </div>
+                    </div>
+
+                    <div class="card span-7">
                         <h2>Live Browser Video Stream</h2>
                         <div class="note-box">
-                            This stream is generated by FastAPI. OpenCV reads the MP4 video, YOLO applies detection,
+                            This stream is generated by FastAPI. OpenCV reads the selected MP4 video, YOLO applies detection,
                             and the API streams annotated frames to the browser as MJPEG.
                         </div>
 
                         <div class="stream-actions">
                             <button class="refresh-button" onclick="startVideoStream()">Start / Restart Stream</button>
-                            <button class="secondary-button" onclick="stopVideoStream()">Stop Stream</button>
+                            <button class="danger-button" onclick="stopVideoStream()">Stop Stream</button>
+                        </div>
+
+                        <h3>Active Runtime Settings</h3>
+                        <div class="settings-preview" id="activeRuntimeSettingsCard">
+                            Loading active settings...
+                        </div>
+
+                        <div class="note-box" style="margin-top: 14px;">
+                            Confidence and frame sampling are edited under the Settings section.
                         </div>
                     </div>
 
@@ -469,31 +615,69 @@
                 </div>
             </section>
 
+            <!-- SETTINGS -->
             <section id="settingsSection" class="section">
                 <div class="grid">
 
                     <div class="card span-6 soft-card-blue">
-                        <h2>Current Configuration</h2>
-                        <div id="configSummaryCard">Loading...</div>
+                        <h2>Edit Detection Settings</h2>
+
+                        <div class="form-row">
+                            <label for="confidenceInput">Minimum Confidence</label>
+                            <input id="confidenceInput" type="number" min="0" max="1" step="0.05">
+                            <div class="form-help">
+                                Valid range is 0.00 to 1.00. Example: 0.50.
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="frameSamplingInput">Process Every N Frames</label>
+                            <input id="frameSamplingInput" type="number" min="1" step="1">
+                            <div class="form-help">
+                                Higher values are faster but detect fewer objects. Example: 30, 60, 90.
+                            </div>
+                        </div>
+
+                        <div class="button-row">
+                            <button class="refresh-button" onclick="saveDetectionSettingsFromForm()">Save Detection Settings</button>
+                        </div>
+
+                        <div id="settingsStatus" class="status-message">
+                            Runtime settings are loaded from the server.
+                        </div>
                     </div>
 
                     <div class="card span-6 soft-card-green">
-                        <h2>Profile and Model Notes</h2>
+                        <h2>Persisted Runtime Settings</h2>
+                        <div id="runtimeSettingsCard">Loading...</div>
+                    </div>
+
+                    <div class="card span-6 soft-card-peach">
+                        <h2>Current Configuration Defaults</h2>
+                        <div id="configSummaryCard">Loading...</div>
+                    </div>
+
+                    <div class="card span-6 soft-card-yellow">
+                        <h2>Profile and Storage Notes</h2>
+                        <div class="metric">
+                            <span class="metric-label">Active Profile</span>
+                            <span class="metric-value">Driving only for now</span>
+                        </div>
                         <div class="metric">
                             <span class="metric-label">Driving Profile</span>
                             <span class="metric-value">person, bicycle, car, motorcycle, bus, truck, traffic light, stop sign</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-label">Airport Profile</span>
-                            <span class="metric-value">placeholder profile; true drone detection requires a drone-specific model</span>
                         </div>
                         <div class="metric">
                             <span class="metric-label">Current Model</span>
                             <span class="metric-value">YOLOv8 nano, lightweight and suitable for proof of concept testing</span>
                         </div>
                         <div class="metric">
-                            <span class="metric-label">Settings Mode</span>
-                            <span class="metric-value">read-only dashboard view; editing settings from UI is planned next</span>
+                            <span class="metric-label">Runtime Settings</span>
+                            <span class="metric-value">Persisted to runtime_settings.json</span>
+                        </div>
+                        <div class="note-box" style="margin-top: 14px;">
+                            On Render, uploaded files may not survive redeploys or restarts unless a persistent disk is configured.
+                            The production step is to mount persistent storage for uploads, outputs, and runtime_settings.json.
                         </div>
                     </div>
 
@@ -505,6 +689,8 @@
 
     <script>
         const API_BASE_URL = "";
+
+        let currentRuntimeSettings = null;
 
         function showSection(sectionName) {
             document.getElementById("historySection").classList.remove("active");
@@ -526,19 +712,19 @@
                 document.getElementById("videoSection").classList.add("active");
                 document.getElementById("navVideo").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Video Stream";
-                document.getElementById("pageSubtitle").innerText = "Browser-based stream of annotated video frames generated by the FastAPI backend.";
+                document.getElementById("pageSubtitle").innerText = "Upload or select an MP4, then stream annotated video frames.";
             }
 
             if (sectionName === "settings") {
                 document.getElementById("settingsSection").classList.add("active");
                 document.getElementById("navSettings").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Settings";
-                document.getElementById("pageSubtitle").innerText = "Current detection configuration and profile details.";
+                document.getElementById("pageSubtitle").innerText = "Edit confidence and frame sampling, and review persisted runtime settings.";
             }
         }
 
-        async function fetchJson(endpoint) {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+        async function fetchJson(endpoint, options = {}) {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
             if (!response.ok) {
                 throw new Error(`API request failed: ${endpoint}`);
@@ -580,6 +766,22 @@
             `;
         }
 
+        function setStatus(elementId, message, statusType = "") {
+            const element = document.getElementById(elementId);
+
+            element.className = "status-message";
+
+            if (statusType === "ok") {
+                element.classList.add("ok");
+            }
+
+            if (statusType === "error") {
+                element.classList.add("error");
+            }
+
+            element.innerText = message;
+        }
+
         async function loadHealth() {
             const footer = document.getElementById("apiStatusFooter");
 
@@ -599,15 +801,238 @@
 
                 configDiv.innerHTML =
                     createMetric("Run Name", data.run_name) +
-                    createMetric("Active Profile", `<span class="pill">${data.active_profile}</span>`) +
+                    createMetric("Default Active Profile", `<span class="pill">${data.active_profile}</span>`) +
                     createMetric("Detection Profile", `<span class="pill pill-green">${data.detection_profile}</span>`) +
-                    createMetric("Video Path", data.video_path) +
+                    createMetric("Default Video Path", data.video_path) +
                     createMetric("Model", data.model_name) +
-                    createMetric("Confidence", data.minimum_confidence) +
-                    createMetric("Frame Sampling", `Every ${data.process_every_n_frames} frame(s)`) +
+                    createMetric("Default Confidence", data.minimum_confidence) +
+                    createMetric("Default Frame Sampling", `Every ${data.process_every_n_frames} frame(s)`) +
                     createMetric("Target Class IDs", data.target_class_ids.join(", "));
             } catch (error) {
                 configDiv.innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
+        }
+
+        async function loadRuntimeSettings() {
+            try {
+                const data = await fetchJson("/runtime-settings");
+                const settings = data.settings;
+
+                currentRuntimeSettings = settings;
+
+                document.getElementById("confidenceInput").value = settings.minimum_confidence;
+                document.getElementById("frameSamplingInput").value = settings.process_every_n_frames;
+
+                const videoSelect = document.getElementById("videoSelect");
+
+                if (videoSelect.options.length > 0) {
+                    videoSelect.value = settings.selected_video_path;
+                }
+
+                const settingsHtml =
+                    createMetric("Selected Video", settings.selected_video_path) +
+                    createMetric("Minimum Confidence", settings.minimum_confidence) +
+                    createMetric("Frame Sampling", `Every ${settings.process_every_n_frames} frame(s)`) +
+                    createMetric("Active Profile", `<span class="pill pill-green">${settings.active_profile}</span>`);
+
+                document.getElementById("runtimeSettingsCard").innerHTML = settingsHtml;
+                document.getElementById("activeRuntimeSettingsCard").innerHTML = settingsHtml;
+
+                setStatus("settingsStatus", "Detection settings loaded.", "ok");
+                setStatus("videoSelectionStatus", "Selected video loaded.", "ok");
+
+            } catch (error) {
+                document.getElementById("runtimeSettingsCard").innerHTML = `<p class="status-error">${error.message}</p>`;
+                document.getElementById("activeRuntimeSettingsCard").innerHTML = `<p class="status-error">${error.message}</p>`;
+                setStatus("settingsStatus", error.message, "error");
+                setStatus("videoSelectionStatus", error.message, "error");
+            }
+        }
+
+        async function loadVideos() {
+            const videoSelect = document.getElementById("videoSelect");
+
+            try {
+                const currentSettingsResponse = await fetchJson("/runtime-settings");
+                const selectedPath = currentSettingsResponse.settings.selected_video_path;
+
+                const data = await fetchJson("/videos");
+
+                videoSelect.innerHTML = "";
+
+                for (const video of data.videos) {
+                    const option = document.createElement("option");
+                    option.value = video.path;
+                    option.text = `${video.label} (${video.source})`;
+
+                    if (video.path === selectedPath) {
+                        option.selected = true;
+                    }
+
+                    videoSelect.appendChild(option);
+                }
+
+                if (data.videos.length === 0) {
+                    const option = document.createElement("option");
+                    option.value = "";
+                    option.text = "No MP4 files found";
+                    videoSelect.appendChild(option);
+                }
+
+                setStatus("uploadStatus", `Video list loaded. ${data.video_count} video(s) available.`, "ok");
+
+            } catch (error) {
+                setStatus("uploadStatus", error.message, "error");
+            }
+        }
+
+        async function uploadSelectedVideo() {
+            const fileInput = document.getElementById("videoFileInput");
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                setStatus("uploadStatus", "Please select an MP4 file first.", "error");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            if (!file.name.toLowerCase().endsWith(".mp4")) {
+                setStatus("uploadStatus", "Only MP4 files are supported.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            setStatus("uploadStatus", "Uploading video. Please wait...", "");
+
+            try {
+                const data = await fetchJson("/videos/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (data.status !== "ok") {
+                    setStatus("uploadStatus", data.message || "Upload failed.", "error");
+                    return;
+                }
+
+                setStatus("uploadStatus", `Uploaded ${data.filename}.`, "ok");
+
+                await loadVideos();
+
+                document.getElementById("videoSelect").value = data.path;
+
+                await saveSelectedVideoFromForm();
+
+                fileInput.value = "";
+
+            } catch (error) {
+                setStatus("uploadStatus", error.message, "error");
+            }
+        }
+
+        async function saveSelectedVideoFromForm() {
+            const selectedVideoPath = document.getElementById("videoSelect").value;
+
+            if (!selectedVideoPath) {
+                setStatus("videoSelectionStatus", "Please select a video file.", "error");
+                return;
+            }
+
+            const currentSettings = currentRuntimeSettings || {
+                minimum_confidence: 0.5,
+                process_every_n_frames: 90,
+                active_profile: "driving"
+            };
+
+            const payload = {
+                selected_video_path: selectedVideoPath,
+                minimum_confidence: Number(currentSettings.minimum_confidence),
+                process_every_n_frames: Number(currentSettings.process_every_n_frames),
+                active_profile: "driving"
+            };
+
+            setStatus("videoSelectionStatus", "Saving selected video...", "");
+
+            try {
+                const data = await fetchJson("/runtime-settings", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (data.status !== "ok") {
+                    const errorMessage = data.errors ? data.errors.join(" ") : "Unable to save selected video.";
+                    setStatus("videoSelectionStatus", errorMessage, "error");
+                    return;
+                }
+
+                setStatus("videoSelectionStatus", "Selected video saved.", "ok");
+
+                await loadRuntimeSettings();
+
+            } catch (error) {
+                setStatus("videoSelectionStatus", error.message, "error");
+            }
+        }
+
+        async function saveDetectionSettingsFromForm() {
+            const minimumConfidence = Number(document.getElementById("confidenceInput").value);
+            const processEveryNFrames = Number(document.getElementById("frameSamplingInput").value);
+
+            const currentSettings = currentRuntimeSettings || {
+                selected_video_path: "",
+                active_profile: "driving"
+            };
+
+            if (!currentSettings.selected_video_path) {
+                setStatus("settingsStatus", "Please select a video file under Video Stream first.", "error");
+                return;
+            }
+
+            if (Number.isNaN(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1) {
+                setStatus("settingsStatus", "Confidence must be between 0 and 1.", "error");
+                return;
+            }
+
+            if (!Number.isInteger(processEveryNFrames) || processEveryNFrames < 1) {
+                setStatus("settingsStatus", "Frame sampling must be a whole number of 1 or greater.", "error");
+                return;
+            }
+
+            const payload = {
+                selected_video_path: currentSettings.selected_video_path,
+                minimum_confidence: minimumConfidence,
+                process_every_n_frames: processEveryNFrames,
+                active_profile: "driving"
+            };
+
+            setStatus("settingsStatus", "Saving detection settings...", "");
+
+            try {
+                const data = await fetchJson("/runtime-settings", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (data.status !== "ok") {
+                    const errorMessage = data.errors ? data.errors.join(" ") : "Unable to save settings.";
+                    setStatus("settingsStatus", errorMessage, "error");
+                    return;
+                }
+
+                setStatus("settingsStatus", "Detection settings saved.", "ok");
+
+                await loadRuntimeSettings();
+
+            } catch (error) {
+                setStatus("settingsStatus", error.message, "error");
             }
         }
 
@@ -632,6 +1057,7 @@
                         <th>Detection Profile</th>
                         <th>Model</th>
                         <th>Frame Skip</th>
+                        <th>Stream Width</th>
                         <th>Frames Processed</th>
                         <th>Unique Persons</th>
                         <th>Total Detections</th>
@@ -657,6 +1083,7 @@
                             <td><span class="pill pill-green">${safeValue(run.detection_profile, "")}</span></td>
                             <td>${safeValue(run.model_name, "")}</td>
                             <td>${safeValue(run.process_every_n_frames, "")}</td>
+                            <td>${safeValue(run.stream_frame_width, "")}</td>
                             <td>${formatNumber(run.frames_processed_by_yolo)}</td>
                             <td><strong>${formatNumber(run.unique_persons)}</strong></td>
                             <td>${formatNumber(totalDetections)}</td>
@@ -682,13 +1109,14 @@
 
         function stopVideoStream() {
             const image = document.getElementById("videoStreamImage");
-
             image.src = "";
         }
 
         async function loadDashboard() {
             await loadHealth();
             await loadConfig();
+            await loadVideos();
+            await loadRuntimeSettings();
             await loadRunHistory();
         }
 

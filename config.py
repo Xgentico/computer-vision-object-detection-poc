@@ -4,10 +4,7 @@
 
 RUN_NAME = "driving_test_001"
 
-# This controls which profile main.py loads.
-# Current options:
-# "driving"
-# "airport"
+# For now, only the driving profile is active.
 ACTIVE_PROFILE = "driving"
 
 
@@ -15,25 +12,48 @@ ACTIVE_PROFILE = "driving"
 # VIDEO / MODEL SETTINGS
 # =========================
 
-#VIDEO_PATH = r"C:\Users\jcano\OneDrive\Documents\Vertex\4644521-hd_1282_720_60fps.mp4"
+# Render-safe relative path.
+# Uploaded videos are selected through runtime_settings.json.
 VIDEO_PATH = "videos/sample_driving.mp4"
 
+# Lightweight YOLO model for proof-of-concept use.
 MODEL_NAME = "yolov8n.pt"
 
-
-# =========================
-# DETECTION RUNTIME SETTINGS
-# =========================
-
-# Minimum confidence required to draw/count a detection
+# Default confidence threshold.
+# Runtime settings can override this value.
 MIN_CONFIDENCE = 0.50
 
-# Process every N frames
-# 1 = every frame, best accuracy
-# 2 = every other frame
-# 4 = every 4th frame
+# Default frame sampling.
+# Runtime settings can override this value.
 PROCESS_EVERY_N_FRAMES = 90
 
-# How close a new person detection must be to an existing person
-# to be considered the same person
+
+# =========================
+# UNIQUE PERSON TRACKING
+# =========================
+
+# Approximate pixel distance used to decide whether a detected person
+# is likely the same person as one already seen.
 MAX_DISTANCE_BETWEEN_PERSONS = 80
+
+
+# =========================
+# LLM / INTERPRETER SETTINGS
+# =========================
+
+# Keep this False for now.
+# The current implementation uses a local fallback interpreter.
+# No real LLM API call is made.
+LLM_ENABLED = False
+
+# Local interpreter for now. Later this could become "openai" or another provider.
+LLM_PROVIDER = "local"
+
+# Local placeholder model name for traceability in summaries.
+LLM_MODEL = "local-warning-interpreter"
+
+# Maximum intended length for warning messages.
+LLM_WARNING_MAX_WORDS = 20
+
+# Number of streamed frames the warning should remain visible on the overlay.
+LLM_WARNING_DISPLAY_FRAMES = 90
