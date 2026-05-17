@@ -30,7 +30,7 @@ from runtime_settings import (
 
 app = FastAPI(
     title="Computer Vision Object Detection API",
-    version="0.2.0"
+    version="0.3.0"
 )
 
 # Allow browser access during local development and Render testing.
@@ -182,6 +182,7 @@ def get_run_history():
                 "active_profile": run_summary.get("active_profile"),
                 "detection_profile": run_summary.get("detection_profile"),
                 "run_timestamp": run_summary.get("run_timestamp"),
+                "video_path": run_summary.get("video_path"),
                 "model_name": run_summary.get("model_name"),
                 "minimum_confidence": run_summary.get("minimum_confidence"),
                 "process_every_n_frames": run_summary.get("process_every_n_frames"),
@@ -189,7 +190,12 @@ def get_run_history():
                 "frames_read": run_summary.get("frames_read"),
                 "frames_processed_by_yolo": run_summary.get("frames_processed_by_yolo"),
                 "unique_persons": run_summary.get("unique_persons"),
-                "total_detection_counts": run_summary.get("total_detection_counts", {})
+                "total_detection_counts": run_summary.get("total_detection_counts", {}),
+                "llm_enabled": run_summary.get("llm_enabled"),
+                "llm_provider": run_summary.get("llm_provider"),
+                "llm_model": run_summary.get("llm_model"),
+                "llm_warnings_generated": run_summary.get("llm_warnings_generated", 0),
+                "llm_warning_events": run_summary.get("llm_warning_events", [])
             })
 
         except Exception as error:
