@@ -18,6 +18,7 @@ from config import (
 from profiles.profile_loader import load_profile
 from runtime_settings import load_runtime_settings
 from llm_interpreter import generate_warning
+from warning_state import add_warning_event
 
 
 # =========================
@@ -26,9 +27,9 @@ from llm_interpreter import generate_warning
 
 # Resize video frames before YOLO detection and before browser streaming.
 # Recommended values:
-# 480 = faster, lower quality
-# 640 = good balance
-# 720 = better quality, slower
+# 640 = faster
+# 960 = good local testing balance
+# 1280 = near full-width for 720p/1080p source videos
 STREAM_FRAME_WIDTH = 1280
 
 
@@ -116,21 +117,39 @@ def draw_warning_overlay(frame, warning_text):
     if not warning_text:
         return
 
-    # Draw a simple dark background box so warning is readable.
+    height, width = frame.shape[:2]
+
+    box_width = 300
+    box_height = 50
+    margin = 15
+
+    x1 = max(margin, width - box_width - margin)
+    y1 = margin
+    x2 = min(width - margin, x1 + box_width)
+    y2 = y1 + box_height
+
     cv2.rectangle(
         frame,
-        (15, 345),
-        (520, 395),
+        (x1, y1),
+        (x2, y2),
         (0, 0, 0),
         -1
+    )
+
+    cv2.rectangle(
+        frame,
+        (x1, y1),
+        (x2, y2),
+        (0, 0, 255),
+        2
     )
 
     cv2.putText(
         frame,
         warning_text,
-        (25, 380),
+        (x1 + 12, y1 + 33),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.9,
+        0.75,
         (0, 0, 255),
         2
     )
@@ -288,8 +307,6 @@ def generate_annotated_frames():
     process_every_n_frames = int(runtime_settings["process_every_n_frames"])
     active_profile = runtime_settings["active_profile"]
 
-    # Driving only for now, but still loaded through profile loader
-    # so the architecture remains ready for future profiles.
     profile = load_profile(active_profile)
 
     detection_profile = profile.DETECTION_PROFILE
@@ -322,8 +339,6 @@ def generate_annotated_frames():
             if not success:
                 break
 
-            # Resize before YOLO and before streaming.
-            # This is important for Render performance.
             frame = resize_frame_for_streaming(frame)
 
             frame_number += 1
@@ -369,8 +384,6 @@ def generate_annotated_frames():
 
                                 tracked_persons.append(matching_person)
 
-                                # This is the only place we call the interpreter.
-                                # It only runs when a new unique person is created.
                                 raw_event = {
                                     "event_type": "unique_person_detected",
                                     "severity": "medium",
@@ -402,6 +415,8 @@ def generate_annotated_frames():
                                 )
 
                                 llm_warning_events.append(warning_event)
+                                add_warning_event(warning_event)
+
                                 llm_warnings_generated += 1
 
                                 latest_overlay_warning = overlay_warning_text
@@ -539,7 +554,6 @@ def generate_annotated_frames():
     finally:
         video_capture.release()
 
-        # If the browser disconnects early, still save a partial summary.
         if not summary_saved and frame_number > 0:
             save_stream_run_summary(
                 runtime_settings=runtime_settings,
@@ -552,4 +566,4 @@ def generate_annotated_frames():
                 total_detection_counts=total_detection_counts,
                 llm_warnings_generated=llm_warnings_generated,
                 llm_warning_events=llm_warning_events
-            )            
+            )

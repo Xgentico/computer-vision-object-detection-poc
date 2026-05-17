@@ -27,10 +27,15 @@ from runtime_settings import (
     save_uploaded_video
 )
 
+from warning_state import (
+    get_warning_events,
+    clear_warning_events
+)
+
 
 app = FastAPI(
     title="Computer Vision Object Detection API",
-    version="0.3.0"
+    version="0.4.0"
 )
 
 # Allow browser access during local development and Render testing.
@@ -129,11 +134,28 @@ def upload_video(file: UploadFile = File(...)):
 
 
 # =========================
+# LIVE WARNING ENDPOINTS
+# =========================
+
+@app.get("/warnings")
+def get_warnings():
+    return get_warning_events()
+
+
+@app.post("/warnings/clear")
+def clear_warnings():
+    return clear_warning_events()
+
+
+# =========================
 # VIDEO STREAM ENDPOINT
 # =========================
 
 @app.get("/video-stream")
 def video_stream():
+    # Clear the live warning panel whenever a new stream starts.
+    clear_warning_events()
+
     return StreamingResponse(
         generate_annotated_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame"
