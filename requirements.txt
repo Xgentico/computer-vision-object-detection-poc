@@ -3,3 +3,4 @@ ultralytics
 fastapi
 uvicorn
 python-multipart
+openai

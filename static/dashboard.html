@@ -10,30 +10,19 @@
             --sidebar: #111827;
             --text: #172033;
             --muted: #667085;
-            --card: #ffffff;
             --border: #e7eaf0;
-
             --blue: #2563eb;
             --blue-soft: #e8f1ff;
-
-            --green: #16a34a;
             --green-soft: #e9f8ef;
-
-            --peach: #f97316;
             --peach-soft: #fff1e8;
-
             --red: #dc2626;
             --red-soft: #fee2e2;
-
             --yellow-soft: #fff8db;
-
             --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
             --radius: 18px;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -61,9 +50,7 @@
             left: 0;
         }
 
-        .brand {
-            margin-bottom: 30px;
-        }
+        .brand { margin-bottom: 30px; }
 
         .brand-title {
             font-size: 22px;
@@ -151,9 +138,7 @@
             box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
         }
 
-        .refresh-button:hover {
-            background: #1d4ed8;
-        }
+        .refresh-button:hover { background: #1d4ed8; }
 
         .secondary-button {
             padding: 11px 15px;
@@ -165,9 +150,7 @@
             font-weight: 800;
         }
 
-        .secondary-button:hover {
-            background: #f8fafc;
-        }
+        .secondary-button:hover { background: #f8fafc; }
 
         .danger-button {
             padding: 11px 15px;
@@ -179,17 +162,10 @@
             font-weight: 800;
         }
 
-        .danger-button:hover {
-            background: #fecaca;
-        }
+        .danger-button:hover { background: #fecaca; }
 
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
+        .section { display: none; }
+        .section.active { display: block; }
 
         .grid {
             display: grid;
@@ -216,6 +192,7 @@
             font-size: 16px;
         }
 
+        .span-3 { grid-column: span 3; }
         .span-4 { grid-column: span 4; }
         .span-5 { grid-column: span 5; }
         .span-6 { grid-column: span 6; }
@@ -232,9 +209,7 @@
             font-size: 14px;
         }
 
-        .metric:last-child {
-            border-bottom: none;
-        }
+        .metric:last-child { border-bottom: none; }
 
         .metric-label {
             color: #344054;
@@ -262,18 +237,13 @@
             color: #15803d;
         }
 
-        .pill-gray {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
         .pill-red {
             background: #fee2e2;
             color: #991b1b;
         }
 
         .status-ok {
-            color: var(--green);
+            color: #16a34a;
             font-weight: 900;
         }
 
@@ -325,9 +295,7 @@
             font-size: 13px;
         }
 
-        tr:hover {
-            background: #fff7ed;
-        }
+        tr:hover { background: #fff7ed; }
 
         .demo-story {
             color: var(--muted);
@@ -335,9 +303,7 @@
             font-size: 14px;
         }
 
-        .demo-story strong {
-            color: var(--text);
-        }
+        .demo-story strong { color: var(--text); }
 
         .soft-card-blue {
             background: linear-gradient(135deg, var(--blue-soft), #ffffff);
@@ -382,16 +348,15 @@
             background: #000;
         }
 
-        .stream-actions {
+        .stream-actions,
+        .button-row {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
             margin-top: 14px;
         }
 
-        .form-row {
-            margin-bottom: 14px;
-        }
+        .form-row { margin-bottom: 14px; }
 
         label {
             display: block;
@@ -412,13 +377,8 @@
             color: var(--text);
         }
 
-        input[type="file"] {
-            padding: 10px;
-        }
-
-        input[type="checkbox"] {
-            width: auto;
-        }
+        input[type="file"] { padding: 10px; }
+        input[type="checkbox"] { width: auto; }
 
         .form-help {
             color: var(--muted);
@@ -427,16 +387,7 @@
             line-height: 1.4;
         }
 
-        .button-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-
-        .settings-preview {
-            margin-top: 10px;
-        }
+        .settings-preview { margin-top: 10px; }
 
         .warning-panel {
             max-height: 520px;
@@ -484,9 +435,7 @@
             font-weight: 800;
         }
 
-        .speech-toggle-row input {
-            width: auto;
-        }
+        .speech-toggle-row input { width: auto; }
 
         .narrative-box {
             background: #ffffff;
@@ -495,8 +444,11 @@
             padding: 16px;
             line-height: 1.6;
             color: #344054;
-            min-height: 110px;
+            min-height: 220px;
+            max-height: 360px;
+            overflow-y: auto;
             white-space: pre-wrap;
+            margin-top: 14px;
         }
 
         .object-class-grid {
@@ -519,12 +471,19 @@
             font-weight: 800;
         }
 
-        .object-class-option:hover {
-            background: #f8fafc;
-        }
+        .object-class-option:hover { background: #f8fafc; }
+        .object-class-option input { margin: 0; }
 
-        .object-class-option input {
-            margin: 0;
+        @media (max-width: 1300px) {
+            .span-3,
+            .span-4,
+            .span-5,
+            .span-6,
+            .span-7,
+            .span-8,
+            .span-12 {
+                grid-column: span 12;
+            }
         }
 
         @media (max-width: 1100px) {
@@ -542,27 +501,14 @@
                 margin-top: 20px;
             }
 
-            .app {
-                display: block;
-            }
+            .app { display: block; }
 
             .main {
                 margin-left: 0;
                 width: 100%;
             }
 
-            .span-4,
-            .span-5,
-            .span-6,
-            .span-7,
-            .span-8,
-            .span-12 {
-                grid-column: span 12;
-            }
-
-            .object-class-grid {
-                grid-template-columns: 1fr;
-            }
+            .object-class-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -596,7 +542,7 @@
                 <div>
                     <h1 class="page-title" id="pageTitle">Run History Dashboard</h1>
                     <div class="page-subtitle" id="pageSubtitle">
-                        Executive view of detection runs, frame sampling, processing workload, selected object classes, unique-person tracking, warning events, and AI narrative summaries.
+                        Executive view of detection runs, frame sampling, selected object classes, unique-person tracking, directional warnings, and AI narrative summaries.
                     </div>
                 </div>
 
@@ -605,7 +551,6 @@
 
             <section id="historySection" class="section active">
                 <div class="grid">
-
                     <div class="card span-12">
                         <h2>Run History</h2>
                         <div id="runHistoryCard">Loading...</div>
@@ -620,42 +565,18 @@
                                 selected object classes, processing workload, unique-person counts, and warning events.
                             </p>
                             <p>
-                                The selected object classes are now editable. For example, a user can run only person detection,
-                                only vehicle detection, or a mixed driving profile depending on the test scenario.
+                                The Video Stream page watches for a new completed run file while the stream is active. When the backend saves the run JSON, the summary is generated automatically.
                             </p>
                         </div>
                     </div>
 
-                    <div class="card span-5 soft-card-yellow">
-                        <h2>AI Narrative Summary</h2>
-                        <div class="note-box">
-                            Generate a spoken narrative from the latest run summary. If OpenAI quota is unavailable, the app returns a local fallback narrative.
-                        </div>
-
-                        <div class="button-row">
-                            <button class="refresh-button" onclick="generateNarrativeSummary()">Generate AI Narrative</button>
-                            <button class="secondary-button" onclick="speakNarrativeSummary()">Speak Narrative</button>
-                            <button class="danger-button" onclick="stopNarrativeSpeech()">Stop Voice</button>
-                        </div>
-
-                        <div id="narrativeStatus" class="status-message">
-                            Narrative summary has not been generated yet.
-                        </div>
-
-                        <h3>Narrative Text</h3>
-                        <div id="narrativeTextBox" class="narrative-box">
-                            Generate a narrative summary after a run completes.
-                        </div>
-                    </div>
-
-                    <div class="card span-12 soft-card-peach">
+                    <div class="card span-5 soft-card-peach">
                         <h2>Planned Drill-Down</h2>
                         <div class="note-box">
                             Next improvement: add a selected-run detail panel showing warning events, selected video,
                             detection counts, selected object classes, and settings used for that run.
                         </div>
                     </div>
-
                 </div>
             </section>
 
@@ -687,9 +608,7 @@
                         <div class="form-row">
                             <label for="videoSelect">Selected Video</label>
                             <select id="videoSelect"></select>
-                            <div class="form-help">
-                                Choose the MP4 file that the stream should use.
-                            </div>
+                            <div class="form-help">Choose the MP4 file that the stream should use.</div>
                         </div>
 
                         <div class="button-row">
@@ -705,12 +624,12 @@
                         <h2>Live Browser Video Stream</h2>
                         <div class="note-box">
                             OpenCV reads the selected MP4 video, YOLO applies detection to the selected object classes,
-                            and the stream displays annotated frames. Warning events appear in the panel beside the video.
+                            and the stream displays annotated frames. The dashboard watches for completed run output automatically.
                         </div>
 
                         <div class="stream-actions">
                             <button class="refresh-button" onclick="startVideoStream()">Start / Restart Stream</button>
-                            <button class="danger-button" onclick="stopVideoStream()">Stop Stream</button>
+                            <button class="danger-button" onclick="stopVideoStream(true)">Stop Stream</button>
                             <button class="secondary-button" onclick="testVoice()">Test Voice</button>
                         </div>
 
@@ -728,18 +647,16 @@
                         </div>
                     </div>
 
-                    <div class="card span-7">
+                    <div class="card span-6">
                         <h2>Video</h2>
                         <div class="video-stream-wrapper">
                             <img id="videoStreamImage" class="video-stream" alt="Annotated video stream will appear here">
                         </div>
                     </div>
 
-                    <div class="card span-5 soft-card-peach">
+                    <div class="card span-3 soft-card-peach">
                         <h2>Live Warnings</h2>
-                        <div class="note-box">
-                            Warnings appear only when a new unique person is detected. If person is not selected as an object class, live person warnings will not be generated.
-                        </div>
+                        <div class="note-box">New-person warnings appear here during the stream.</div>
 
                         <div class="button-row">
                             <button class="secondary-button" onclick="clearWarnings()">Clear Warnings</button>
@@ -752,6 +669,24 @@
                         </div>
                     </div>
 
+                    <div class="card span-3 soft-card-yellow">
+                        <h2>Run Summary</h2>
+                        <div class="note-box">
+                            Automatically generated when the backend saves a new run file. The Stop button below stops the spoken summary.
+                        </div>
+
+                        <div class="button-row">
+                            <button class="danger-button" onclick="stopNarrativeSpeech()">Stop</button>
+                        </div>
+
+                        <div id="narrativeStatus" class="status-message">
+                            No summary generated yet.
+                        </div>
+
+                        <div id="narrativeTextBox" class="narrative-box">
+                            Start a stream. The summary will generate automatically when the run completes.
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -764,17 +699,13 @@
                         <div class="form-row">
                             <label for="confidenceInput">Minimum Confidence</label>
                             <input id="confidenceInput" type="number" min="0" max="1" step="0.05">
-                            <div class="form-help">
-                                Valid range is 0.00 to 1.00. Example: 0.50.
-                            </div>
+                            <div class="form-help">Valid range is 0.00 to 1.00. Example: 0.50.</div>
                         </div>
 
                         <div class="form-row">
                             <label for="frameSamplingInput">Process Every N Frames</label>
                             <input id="frameSamplingInput" type="number" min="1" step="1">
-                            <div class="form-help">
-                                Higher values are faster but detect fewer objects. Example: 30, 60, 90.
-                            </div>
+                            <div class="form-help">Higher values are faster but detect fewer objects. Example: 30, 60, 90.</div>
                         </div>
 
                         <h3>Editable Object Classes</h3>
@@ -820,7 +751,7 @@
                         </div>
                         <div class="metric">
                             <span class="metric-label">Live Warning Layer</span>
-                            <span class="metric-value">Local interpreter, no external LLM call</span>
+                            <span class="metric-value">Short spoken warnings with left / center / right</span>
                         </div>
                         <div class="metric">
                             <span class="metric-label">Narrative Layer</span>
@@ -835,7 +766,6 @@
                             <span class="metric-value">Driving-profile classes only</span>
                         </div>
                     </div>
-
                 </div>
             </section>
 
@@ -847,12 +777,16 @@
 
         let currentRuntimeSettings = null;
         let warningPollInterval = null;
+        let runCompletionWatcherInterval = null;
         let spokenWarningKeys = new Set();
         let isStreamActive = false;
         let liveSpeechEnabled = true;
         let availableVoices = [];
         let latestNarrativeText = "";
         let availableObjectClasses = [];
+        let autoSummaryInProgress = false;
+        let latestRunFilenameBeforeStream = null;
+        let completedRunFilenameHandled = null;
 
         function showSection(sectionName) {
             document.getElementById("historySection").classList.remove("active");
@@ -867,14 +801,14 @@
                 document.getElementById("historySection").classList.add("active");
                 document.getElementById("navHistory").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Run History Dashboard";
-                document.getElementById("pageSubtitle").innerText = "Executive view of detection runs, frame sampling, processing workload, selected object classes, unique-person tracking, warning events, and AI narrative summaries.";
+                document.getElementById("pageSubtitle").innerText = "Executive view of detection runs, frame sampling, selected object classes, unique-person tracking, directional warnings, and AI narrative summaries.";
             }
 
             if (sectionName === "video") {
                 document.getElementById("videoSection").classList.add("active");
                 document.getElementById("navVideo").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Video Stream";
-                document.getElementById("pageSubtitle").innerText = "Upload or select an MP4, then stream annotated video frames with live spoken warnings.";
+                document.getElementById("pageSubtitle").innerText = "Live video, live warnings, and automatic run narrative summary in one demo view.";
             }
 
             if (sectionName === "settings") {
@@ -1013,6 +947,22 @@
             }
         }
 
+        function buildSpokenWarningFromRegion(screenRegion) {
+            if (screenRegion === "left") {
+                return "Warning. Person on the left.";
+            }
+
+            if (screenRegion === "right") {
+                return "Warning. Person on the right.";
+            }
+
+            if (screenRegion === "center") {
+                return "Warning. Person in the center.";
+            }
+
+            return "Warning. Person detected.";
+        }
+
         function speakLiveWarning(message) {
             if (!liveSpeechEnabled) {
                 return;
@@ -1026,7 +976,64 @@
             document.getElementById("liveSpeechToggle").checked = true;
 
             loadBrowserVoices();
-            speakText("Warning. Person close by.");
+            speakText("Warning. Person on the right.");
+        }
+
+        async function getLatestRunFilename() {
+            try {
+                const data = await fetchJson("/runs/latest");
+
+                if (data.status === "ok" && data.filename) {
+                    return data.filename;
+                }
+
+                return null;
+
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function startRunCompletionWatcher() {
+            stopRunCompletionWatcher();
+
+            runCompletionWatcherInterval = setInterval(async function () {
+                if (!isStreamActive || autoSummaryInProgress) {
+                    return;
+                }
+
+                const latestFilename = await getLatestRunFilename();
+
+                if (!latestFilename) {
+                    return;
+                }
+
+                const isNewRunFile = latestFilename !== latestRunFilenameBeforeStream;
+                const hasNotHandledFile = latestFilename !== completedRunFilenameHandled;
+
+                if (isNewRunFile && hasNotHandledFile) {
+                    completedRunFilenameHandled = latestFilename;
+
+                    setStatus(
+                        "narrativeStatus",
+                        `Completed run detected: ${latestFilename}. Generating summary...`,
+                        "ok"
+                    );
+
+                    isStreamActive = false;
+                    stopWarningPolling();
+                    stopRunCompletionWatcher();
+
+                    await generateNarrativeSummary(true);
+                }
+            }, 2000);
+        }
+
+        function stopRunCompletionWatcher() {
+            if (runCompletionWatcherInterval) {
+                clearInterval(runCompletionWatcherInterval);
+                runCompletionWatcherInterval = null;
+            }
         }
 
         function getSelectedClassIdsFromCheckboxes() {
@@ -1460,10 +1467,13 @@
 
                 for (const warning of reversedWarnings) {
                     const warningKey = `${warning.person_id}-${warning.frame_number}`;
+                    const screenRegion = warning.screen_region || "not available";
+                    const spokenMessage = buildSpokenWarningFromRegion(screenRegion);
+                    const titleMessage = warning.warning_text || spokenMessage;
 
                     if (isStreamActive && !spokenWarningKeys.has(warningKey)) {
                         spokenWarningKeys.add(warningKey);
-                        speakLiveWarning("Warning. Person close by.");
+                        speakLiveWarning(spokenMessage);
                     }
 
                     const confidence = warning.confidence !== undefined && warning.confidence !== null
@@ -1476,10 +1486,11 @@
 
                     html += `
                         <div class="warning-item">
-                            <div class="warning-title">${safeValue(warning.overlay_warning_text, "Person close by.")}</div>
+                            <div class="warning-title">${safeValue(titleMessage, "Person warning")}</div>
                             <div class="warning-meta">
                                 Person ID: ${safeValue(warning.person_id, "n/a")}<br>
                                 Frame: ${safeValue(warning.frame_number, "n/a")}<br>
+                                Region: ${safeValue(screenRegion, "n/a")}<br>
                                 Confidence: ${confidence}<br>
                                 Center: ${centerPoint}<br>
                                 Time: ${safeValue(warning.created_at, "n/a")}
@@ -1515,18 +1526,32 @@
         }
 
         function startWarningPolling() {
-            if (warningPollInterval) {
-                clearInterval(warningPollInterval);
-            }
-
+            stopWarningPolling();
             warningPollInterval = setInterval(loadWarnings, 1000);
         }
 
-        function startVideoStream() {
+        function stopWarningPolling() {
+            if (warningPollInterval) {
+                clearInterval(warningPollInterval);
+                warningPollInterval = null;
+            }
+        }
+
+        async function startVideoStream() {
             const image = document.getElementById("videoStreamImage");
 
+            latestRunFilenameBeforeStream = await getLatestRunFilename();
+
             isStreamActive = true;
+            autoSummaryInProgress = false;
+            completedRunFilenameHandled = null;
             spokenWarningKeys.clear();
+            latestNarrativeText = "";
+
+            document.getElementById("narrativeTextBox").innerText =
+                "Stream running. Summary will generate automatically when the run completes.";
+
+            setStatus("narrativeStatus", "Watching for completed run summary file.", "");
 
             clearWarnings();
 
@@ -1534,13 +1559,17 @@
                 window.speechSynthesis.cancel();
             }
 
+            image.onerror = null;
             image.src = `${API_BASE_URL}/video-stream?time=${new Date().getTime()}`;
 
             startWarningPolling();
+            startRunCompletionWatcher();
         }
 
-        function stopVideoStream() {
+        function stopVideoStream(shouldAutoGenerateSummary = false) {
             const image = document.getElementById("videoStreamImage");
+
+            image.onerror = null;
             image.src = "";
 
             isStreamActive = false;
@@ -1549,18 +1578,35 @@
                 window.speechSynthesis.cancel();
             }
 
-            if (warningPollInterval) {
-                clearInterval(warningPollInterval);
-                warningPollInterval = null;
+            stopWarningPolling();
+            stopRunCompletionWatcher();
+
+            if (shouldAutoGenerateSummary) {
+                autoGenerateSummaryAfterStop();
             }
         }
 
-        async function generateNarrativeSummary() {
+        async function autoGenerateSummaryAfterStop() {
+            if (autoSummaryInProgress) {
+                return;
+            }
+
+            autoSummaryInProgress = true;
+
+            setStatus("narrativeStatus", "Stream stopped. Generating summary from latest available run...", "");
+            document.getElementById("narrativeTextBox").innerText = "Generating summary...";
+
+            await generateNarrativeSummary(true);
+
+            autoSummaryInProgress = false;
+        }
+
+        async function generateNarrativeSummary(shouldSpeakAfterGeneration = false) {
             const narrativeBox = document.getElementById("narrativeTextBox");
 
-            setStatus("narrativeStatus", "Generating narrative summary. Please wait...", "");
+            setStatus("narrativeStatus", "Generating summary. Please wait...", "");
 
-            narrativeBox.innerText = "Generating narrative summary...";
+            narrativeBox.innerText = "Generating summary...";
 
             try {
                 const data = await fetchJson("/runs/latest/narrative-summary", {
@@ -1569,19 +1615,33 @@
 
                 latestNarrativeText = data.narrative_text || "";
 
-                narrativeBox.innerText = latestNarrativeText || "No narrative text returned.";
+                narrativeBox.innerText = latestNarrativeText || "No summary text returned.";
 
                 if (data.status === "ok") {
-                    setStatus("narrativeStatus", `Narrative generated using ${data.model_name}. Warning count: ${data.warning_count}.`, "ok");
+                    setStatus(
+                        "narrativeStatus",
+                        `Summary generated using ${data.model_name}. Warning count: ${data.warning_count}.`,
+                        "ok"
+                    );
                 } else if (data.status === "fallback") {
-                    setStatus("narrativeStatus", `Fallback narrative generated. OpenAI was unavailable. Warning count: ${data.warning_count}.`, "error");
+                    setStatus(
+                        "narrativeStatus",
+                        `Fallback summary generated. OpenAI was unavailable. Warning count: ${data.warning_count}.`,
+                        "error"
+                    );
                 } else {
-                    setStatus("narrativeStatus", data.message || "Narrative response received.", "");
+                    setStatus("narrativeStatus", data.message || "Summary response received.", "");
+                }
+
+                await loadRunHistory();
+
+                if (shouldSpeakAfterGeneration && latestNarrativeText) {
+                    speakNarrativeSummary();
                 }
 
             } catch (error) {
                 latestNarrativeText = "";
-                narrativeBox.innerText = "Unable to generate narrative summary.";
+                narrativeBox.innerText = "Unable to generate summary.";
                 setStatus("narrativeStatus", error.message, "error");
             }
         }
@@ -1590,13 +1650,18 @@
             const narrativeBox = document.getElementById("narrativeTextBox");
             const textToSpeak = latestNarrativeText || narrativeBox.innerText;
 
-            if (!textToSpeak || textToSpeak.includes("Generate a narrative")) {
-                setStatus("narrativeStatus", "Generate a narrative first, then click Speak Narrative.", "error");
+            if (
+                !textToSpeak ||
+                textToSpeak.includes("Start a stream") ||
+                textToSpeak.includes("Stream running") ||
+                textToSpeak.includes("Generating summary")
+            ) {
+                setStatus("narrativeStatus", "Generate a summary first, then click Speak.", "error");
                 return;
             }
 
             speakText(textToSpeak);
-            setStatus("narrativeStatus", "Speaking narrative summary.", "ok");
+            setStatus("narrativeStatus", "Speaking summary.", "ok");
         }
 
         function stopNarrativeSpeech() {
@@ -1604,7 +1669,7 @@
                 window.speechSynthesis.cancel();
             }
 
-            setStatus("narrativeStatus", "Narrative speech stopped.", "");
+            setStatus("narrativeStatus", "Summary speech stopped.", "");
         }
 
         async function loadDashboard() {

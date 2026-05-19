@@ -42,11 +42,11 @@ MAX_DISTANCE_BETWEEN_PERSONS = 80
 # =========================
 
 # Keep this False for now.
-# The current implementation uses a local fallback interpreter.
-# No real LLM API call is made.
+# The current live warning implementation uses a local fallback interpreter.
+# No real LLM API call is made for live warnings.
 LLM_ENABLED = False
 
-# Local interpreter for now. Later this could become "openai" or another provider.
+# Local interpreter for live warnings.
 LLM_PROVIDER = "local"
 
 # Local placeholder model name for traceability in summaries.
@@ -57,3 +57,21 @@ LLM_WARNING_MAX_WORDS = 20
 
 # Number of streamed frames the warning should remain visible on the overlay.
 LLM_WARNING_DISPLAY_FRAMES = 90
+
+
+# =========================
+# OPENAI NARRATIVE SUMMARY SETTINGS
+# =========================
+
+# This controls the end-of-run narrative summary only.
+# It does not affect YOLO detection or the live warning interpreter.
+OPENAI_NARRATIVE_ENABLED = True
+
+# Low-cost model for summarizing structured warning events.
+OPENAI_NARRATIVE_MODEL = "gpt-5.4-nano"
+
+# Keep the narrative concise for demo use.
+OPENAI_NARRATIVE_MAX_WORDS = 140
+
+# Limit warning events sent to OpenAI to avoid unnecessary token use.
+OPENAI_NARRATIVE_MAX_WARNING_EVENTS = 50

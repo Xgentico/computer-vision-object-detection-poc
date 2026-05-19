@@ -20,7 +20,6 @@ from runtime_settings import (
     load_runtime_settings,
     get_object_class_names
 )
-from llm_interpreter import generate_warning
 from warning_state import add_warning_event
 
 
@@ -65,6 +64,29 @@ def get_center_point(x1, y1, x2, y2):
     center_x = int((x1 + x2) / 2)
     center_y = int((y1 + y2) / 2)
     return center_x, center_y
+
+
+def get_screen_region(center_x, frame_width):
+    left_boundary = frame_width / 3
+    right_boundary = (frame_width / 3) * 2
+
+    if center_x < left_boundary:
+        return "left"
+
+    if center_x < right_boundary:
+        return "center"
+
+    return "right"
+
+
+def build_region_warning_messages(screen_region):
+    if screen_region == "left":
+        return "Warning. Person on the left.", "Person left."
+
+    if screen_region == "right":
+        return "Warning. Person on the right.", "Person right."
+
+    return "Warning. Person in the center.", "Person center."
 
 
 def distance_between_points(point1, point2):
@@ -185,6 +207,7 @@ def create_unique_person_event(
     frame_number,
     person_id,
     center_point,
+    screen_region,
     warning_text,
     overlay_warning_text
 ):
@@ -199,6 +222,7 @@ def create_unique_person_event(
             "x": center_point[0],
             "y": center_point[1]
         },
+        "screen_region": screen_region,
         "message": "New unique person detected.",
         "warning_text": warning_text,
         "overlay_warning_text": overlay_warning_text
@@ -300,7 +324,7 @@ def save_stream_run_summary(
     print(f"Frames read: {frame_number}")
     print(f"Frames processed by YOLO: {processed_frame_count}")
     print(f"Unique persons: {unique_person_count}")
-    print(f"LLM warnings generated: {llm_warnings_generated}")
+    print(f"Warnings generated: {llm_warnings_generated}")
     print("======================================")
     print("")
 
@@ -399,32 +423,17 @@ def generate_annotated_frames():
 
                                 tracked_persons.append(matching_person)
 
-                                raw_event = {
-                                    "event_type": "unique_person_detected",
-                                    "severity": "medium",
-                                    "class": "person",
-                                    "confidence": confidence,
-                                    "frame_number": frame_number,
-                                    "person_id": matching_person["id"],
-                                    "center_point": {
-                                        "x": center_point[0],
-                                        "y": center_point[1]
-                                    },
-                                    "message": "New unique person detected."
-                                }
+                                frame_width = frame.shape[1]
+                                screen_region = get_screen_region(center_point[0], frame_width)
 
-                                warning_text = generate_warning(
-                                    raw_event,
-                                    llm_enabled=LLM_ENABLED
-                                )
-
-                                overlay_warning_text = "Person close by."
+                                warning_text, overlay_warning_text = build_region_warning_messages(screen_region)
 
                                 warning_event = create_unique_person_event(
                                     confidence=confidence,
                                     frame_number=frame_number,
                                     person_id=matching_person["id"],
                                     center_point=center_point,
+                                    screen_region=screen_region,
                                     warning_text=warning_text,
                                     overlay_warning_text=overlay_warning_text
                                 )
@@ -437,7 +446,7 @@ def generate_annotated_frames():
                                 latest_overlay_warning = overlay_warning_text
                                 warning_frames_remaining = LLM_WARNING_DISPLAY_FRAMES
 
-                                print(f"LLM WARNING: {warning_text}")
+                                print(f"LIVE WARNING: {warning_text}")
 
                             else:
                                 matching_person["center"] = center_point
