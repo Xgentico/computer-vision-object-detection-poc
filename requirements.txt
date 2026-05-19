@@ -1,6 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
 opencv-python
 ultralytics
-fastapi
-uvicorn
-python-multipart
+numpy
 openai
+python-dotenv

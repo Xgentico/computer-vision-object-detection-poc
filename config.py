@@ -1,77 +1,113 @@
+import os
+from dotenv import load_dotenv
+
 # =========================
-# RUN SETTINGS
+# ENVIRONMENT SETUP
 # =========================
 
-RUN_NAME = "driving_test_001"
+# Loads local secrets/settings from a .env file in the project root.
+# Example .env:
+# OPENAI_API_KEY=sk-proj-your-key-here
+load_dotenv()
 
-# For now, only the driving profile is active.
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+
+# =========================
+# GENERAL RUN SETTINGS
+# =========================
+
+RUN_NAME = "vertex_computer_vision_poc"
+
+# For now, we are only using the driving profile.
 ACTIVE_PROFILE = "driving"
 
 
 # =========================
-# VIDEO / MODEL SETTINGS
+# VIDEO SETTINGS
 # =========================
 
-# Render-safe relative path.
-# Uploaded videos are selected through runtime_settings.json.
-VIDEO_PATH = "videos/sample_driving.mp4"
+# Default video path. Runtime settings can override this from the dashboard.
+VIDEO_PATH = "videos/sample.mp4"
 
-# Lightweight YOLO model for proof-of-concept use.
-MODEL_NAME = "yolov8n.pt"
-
-# Default confidence threshold.
-# Runtime settings can override this value.
-MIN_CONFIDENCE = 0.50
-
-# Default frame sampling.
-# Runtime settings can override this value.
+# Process every N frames.
+# Higher number = faster but less accurate.
+# Lower number = slower but more complete.
 PROCESS_EVERY_N_FRAMES = 90
 
 
 # =========================
-# UNIQUE PERSON TRACKING
+# MODEL SETTINGS
 # =========================
 
-# Approximate pixel distance used to decide whether a detected person
-# is likely the same person as one already seen.
+# YOLOv8 nano model.
+# This is lightweight and works well for a local POC.
+MODEL_NAME = "yolov8n.pt"
+
+# Default minimum confidence threshold.
+# Runtime settings can override this from the dashboard.
+MIN_CONFIDENCE = 0.50
+
+# Alias kept for readability and future use.
+MINIMUM_CONFIDENCE = MIN_CONFIDENCE
+
+
+# =========================
+# PERSON TRACKING SETTINGS
+# =========================
+
+# Used to estimate whether a detected person is the same person
+# across processed frames.
 MAX_DISTANCE_BETWEEN_PERSONS = 80
 
 
 # =========================
-# LLM / INTERPRETER SETTINGS
+# LIVE WARNING SETTINGS
 # =========================
 
-# Keep this False for now.
-# The current live warning implementation uses a local fallback interpreter.
-# No real LLM API call is made for live warnings.
-LLM_ENABLED = False
-
-# Local interpreter for live warnings.
+# This controls the local warning layer.
+# The live warning does not need OpenAI.
+LLM_ENABLED = True
 LLM_PROVIDER = "local"
-
-# Local placeholder model name for traceability in summaries.
 LLM_MODEL = "local-warning-interpreter"
 
-# Maximum intended length for warning messages.
-LLM_WARNING_MAX_WORDS = 20
-
-# Number of streamed frames the warning should remain visible on the overlay.
-LLM_WARNING_DISPLAY_FRAMES = 90
+# Number of streamed frames to keep the warning overlay visible.
+LLM_WARNING_DISPLAY_FRAMES = 30
 
 
 # =========================
 # OPENAI NARRATIVE SUMMARY SETTINGS
 # =========================
 
-# This controls the end-of-run narrative summary only.
-# It does not affect YOLO detection or the live warning interpreter.
-OPENAI_NARRATIVE_ENABLED = True
+# This controls the end-of-run narrative summary.
+# If OPENAI_API_KEY is not present, the app should fall back
+# to a local summary.
+OPENAI_ENABLED = bool(OPENAI_API_KEY)
 
-# Low-cost model for summarizing structured warning events.
-OPENAI_NARRATIVE_MODEL = "gpt-5.4-nano"
+# Existing service code expects this name.
+OPENAI_NARRATIVE_ENABLED = OPENAI_ENABLED
 
-# Keep the narrative concise for demo use.
-OPENAI_NARRATIVE_MAX_WORDS = 140
+# Keep this inexpensive for the POC.
+OPENAI_NARRATIVE_MODEL = "gpt-4o-mini"
 
-# Limit warning events sent to OpenAI to avoid unnecessary token use.
-OPENAI_NARRATIVE_MAX_WARNING_EVENTS = 50
+# Existing service code may expect this name.
+OPENAI_MODEL = OPENAI_NARRATIVE_MODEL
+
+# Maximum target length for the generated run narrative.
+OPENAI_NARRATIVE_MAX_WORDS = 120
+
+# Maximum number of warning events to send to OpenAI.
+# Keeps the prompt small and inexpensive.
+OPENAI_NARRATIVE_MAX_WARNING_EVENTS = 25
+
+
+# =========================
+# FILE STORAGE SETTINGS
+# =========================
+
+UPLOADS_FOLDER = "uploads"
+OUTPUTS_FOLDER = "outputs"
+STATIC_FOLDER = "static"
+VIDEOS_FOLDER = "videos"
+
+RUNTIME_SETTINGS_FILE = "runtime_settings.json"
