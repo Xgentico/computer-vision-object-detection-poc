@@ -24,7 +24,9 @@ from runtime_settings import (
     list_video_files,
     load_runtime_settings,
     update_runtime_settings,
-    save_uploaded_video
+    save_uploaded_video,
+    DRIVING_OBJECT_CLASSES,
+    get_object_class_names
 )
 
 from warning_state import (
@@ -32,13 +34,15 @@ from warning_state import (
     clear_warning_events
 )
 
+from openai_narrative_service import generate_narrative_from_latest_run
+
 
 app = FastAPI(
     title="Computer Vision Object Detection API",
-    version="0.4.0"
+    version="0.6.0"
 )
 
-# Allow browser access during local development and Render testing.
+# Allow browser access during local development.
 # Later we can restrict this.
 app.add_middleware(
     CORSMiddleware,
@@ -87,6 +91,7 @@ def get_config():
         "process_every_n_frames": PROCESS_EVERY_N_FRAMES,
         "max_distance_between_persons": MAX_DISTANCE_BETWEEN_PERSONS,
         "target_class_ids": profile.TARGET_CLASS_IDS,
+        "target_class_names": get_object_class_names(profile.TARGET_CLASS_IDS),
         "person_class_id": profile.PERSON_CLASS_ID
     }
 
@@ -99,16 +104,40 @@ def get_config():
 def get_runtime_settings():
     settings = load_runtime_settings()
 
+    selected_class_ids = settings.get("selected_class_ids", [])
+
     return {
         "status": "ok",
-        "settings": settings
+        "settings": {
+            **settings,
+            "selected_class_names": get_object_class_names(selected_class_ids)
+        }
     }
 
 
 @app.post("/runtime-settings")
 def post_runtime_settings(settings: dict):
     result = update_runtime_settings(settings)
+
+    if result.get("status") == "ok":
+        selected_class_ids = result["settings"].get("selected_class_ids", [])
+        result["settings"]["selected_class_names"] = get_object_class_names(selected_class_ids)
+
     return result
+
+
+# =========================
+# OBJECT CLASS ENDPOINTS
+# =========================
+
+@app.get("/object-classes")
+def get_object_classes():
+    return {
+        "status": "ok",
+        "active_profile": "driving",
+        "classes": DRIVING_OBJECT_CLASSES,
+        "note": "Only driving profile object classes are supported for now."
+    }
 
 
 # =========================
@@ -163,6 +192,15 @@ def video_stream():
 
 
 # =========================
+# NARRATIVE SUMMARY ENDPOINTS
+# =========================
+
+@app.post("/runs/latest/narrative-summary")
+def post_latest_run_narrative_summary():
+    return generate_narrative_from_latest_run()
+
+
+# =========================
 # RUN HISTORY ENDPOINTS
 # =========================
 
@@ -197,6 +235,8 @@ def get_run_history():
 
             filename = os.path.basename(summary_file)
 
+            selected_class_ids = run_summary.get("selected_class_ids", run_summary.get("target_class_ids", []))
+
             runs.append({
                 "filename": filename,
                 "summary_file": summary_file,
@@ -213,6 +253,11 @@ def get_run_history():
                 "frames_processed_by_yolo": run_summary.get("frames_processed_by_yolo"),
                 "unique_persons": run_summary.get("unique_persons"),
                 "total_detection_counts": run_summary.get("total_detection_counts", {}),
+                "selected_class_ids": selected_class_ids,
+                "selected_class_names": run_summary.get(
+                    "selected_class_names",
+                    get_object_class_names(selected_class_ids)
+                ),
                 "llm_enabled": run_summary.get("llm_enabled"),
                 "llm_provider": run_summary.get("llm_provider"),
                 "llm_model": run_summary.get("llm_model"),

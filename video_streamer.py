@@ -16,7 +16,10 @@ from config import (
 )
 
 from profiles.profile_loader import load_profile
-from runtime_settings import load_runtime_settings
+from runtime_settings import (
+    load_runtime_settings,
+    get_object_class_names
+)
 from llm_interpreter import generate_warning
 from warning_state import add_warning_event
 
@@ -206,6 +209,8 @@ def build_run_summary(
     runtime_settings,
     detection_profile,
     target_class_ids,
+    selected_class_ids,
+    selected_class_names,
     person_class_id,
     frame_number,
     processed_frame_count,
@@ -229,6 +234,8 @@ def build_run_summary(
         "max_distance_between_persons": MAX_DISTANCE_BETWEEN_PERSONS,
         "stream_frame_width": STREAM_FRAME_WIDTH,
         "target_class_ids": target_class_ids,
+        "selected_class_ids": selected_class_ids,
+        "selected_class_names": selected_class_names,
         "person_class_id": person_class_id,
         "frames_read": frame_number,
         "frames_processed_by_yolo": processed_frame_count,
@@ -248,6 +255,8 @@ def save_stream_run_summary(
     runtime_settings,
     detection_profile,
     target_class_ids,
+    selected_class_ids,
+    selected_class_names,
     person_class_id,
     frame_number,
     processed_frame_count,
@@ -265,6 +274,8 @@ def save_stream_run_summary(
         runtime_settings=runtime_settings,
         detection_profile=detection_profile,
         target_class_ids=target_class_ids,
+        selected_class_ids=selected_class_ids,
+        selected_class_names=selected_class_names,
         person_class_id=person_class_id,
         frame_number=frame_number,
         processed_frame_count=processed_frame_count,
@@ -285,6 +296,7 @@ def save_stream_run_summary(
     print(f"Video path: {runtime_settings['selected_video_path']}")
     print(f"Confidence: {runtime_settings['minimum_confidence']}")
     print(f"Process every N frames: {runtime_settings['process_every_n_frames']}")
+    print(f"Selected classes: {selected_class_names}")
     print(f"Frames read: {frame_number}")
     print(f"Frames processed by YOLO: {processed_frame_count}")
     print(f"Unique persons: {unique_person_count}")
@@ -312,6 +324,9 @@ def generate_annotated_frames():
     detection_profile = profile.DETECTION_PROFILE
     target_class_ids = profile.TARGET_CLASS_IDS
     person_class_id = profile.PERSON_CLASS_ID
+
+    selected_class_ids = runtime_settings.get("selected_class_ids", target_class_ids)
+    selected_class_names = get_object_class_names(selected_class_ids)
 
     video_capture = cv2.VideoCapture(selected_video_path)
 
@@ -356,7 +371,7 @@ def generate_annotated_frames():
                         cls = int(box.cls[0])
                         confidence = float(box.conf[0])
 
-                        if cls not in target_class_ids:
+                        if cls not in selected_class_ids:
                             continue
 
                         if confidence < minimum_confidence:
@@ -510,7 +525,7 @@ def generate_annotated_frames():
 
             draw_screen_text(
                 annotated_frame,
-                f"Stream width: {STREAM_FRAME_WIDTH}",
+                f"Classes: {', '.join(selected_class_names)}",
                 20,
                 320
             )
@@ -541,6 +556,8 @@ def generate_annotated_frames():
             runtime_settings=runtime_settings,
             detection_profile=detection_profile,
             target_class_ids=target_class_ids,
+            selected_class_ids=selected_class_ids,
+            selected_class_names=selected_class_names,
             person_class_id=person_class_id,
             frame_number=frame_number,
             processed_frame_count=processed_frame_count,
@@ -559,6 +576,8 @@ def generate_annotated_frames():
                 runtime_settings=runtime_settings,
                 detection_profile=detection_profile,
                 target_class_ids=target_class_ids,
+                selected_class_ids=selected_class_ids,
+                selected_class_names=selected_class_names,
                 person_class_id=person_class_id,
                 frame_number=frame_number,
                 processed_frame_count=processed_frame_count,

@@ -416,6 +416,10 @@
             padding: 10px;
         }
 
+        input[type="checkbox"] {
+            width: auto;
+        }
+
         .form-help {
             color: var(--muted);
             font-size: 12px;
@@ -484,6 +488,45 @@
             width: auto;
         }
 
+        .narrative-box {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            line-height: 1.6;
+            color: #344054;
+            min-height: 110px;
+            white-space: pre-wrap;
+        }
+
+        .object-class-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .object-class-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px 12px;
+            font-size: 14px;
+            color: #344054;
+            font-weight: 800;
+        }
+
+        .object-class-option:hover {
+            background: #f8fafc;
+        }
+
+        .object-class-option input {
+            margin: 0;
+        }
+
         @media (max-width: 1100px) {
             .sidebar {
                 position: relative;
@@ -516,6 +559,10 @@
             .span-12 {
                 grid-column: span 12;
             }
+
+            .object-class-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -527,7 +574,7 @@
             <div class="brand">
                 <div class="brand-title">Object Detection Platform</div>
                 <div class="brand-subtitle">
-                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, spoken warnings, and run analytics.
+                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, spoken warnings, AI narrative, and run analytics.
                 </div>
             </div>
 
@@ -549,14 +596,13 @@
                 <div>
                     <h1 class="page-title" id="pageTitle">Run History Dashboard</h1>
                     <div class="page-subtitle" id="pageSubtitle">
-                        Executive view of detection runs, frame sampling, processing workload, unique-person tracking, and warning events.
+                        Executive view of detection runs, frame sampling, processing workload, selected object classes, unique-person tracking, warning events, and AI narrative summaries.
                     </div>
                 </div>
 
                 <button class="refresh-button" onclick="loadDashboard()">Refresh Data</button>
             </div>
 
-            <!-- RUN HISTORY -->
             <section id="historySection" class="section active">
                 <div class="grid">
 
@@ -565,33 +611,54 @@
                         <div id="runHistoryCard">Loading...</div>
                     </div>
 
-                    <div class="card span-8 soft-card-green">
+                    <div class="card span-7 soft-card-green">
                         <h2>Why This Matters</h2>
                         <div class="demo-story">
                             <p>
                                 <strong>This proof of concept creates repeatable computer vision runs.</strong>
                                 Each run stores the active detection profile, model, confidence threshold, frame sampling rate,
-                                processing workload, unique-person counts, and warning events.
+                                selected object classes, processing workload, unique-person counts, and warning events.
                             </p>
                             <p>
-                                The warning count proves that the interpretation layer is event-driven. It does not generate a warning
-                                for every raw person detection. It generates warnings only when a new unique person is identified.
+                                The selected object classes are now editable. For example, a user can run only person detection,
+                                only vehicle detection, or a mixed driving profile depending on the test scenario.
                             </p>
                         </div>
                     </div>
 
-                    <div class="card span-4 soft-card-peach">
+                    <div class="card span-5 soft-card-yellow">
+                        <h2>AI Narrative Summary</h2>
+                        <div class="note-box">
+                            Generate a spoken narrative from the latest run summary. If OpenAI quota is unavailable, the app returns a local fallback narrative.
+                        </div>
+
+                        <div class="button-row">
+                            <button class="refresh-button" onclick="generateNarrativeSummary()">Generate AI Narrative</button>
+                            <button class="secondary-button" onclick="speakNarrativeSummary()">Speak Narrative</button>
+                            <button class="danger-button" onclick="stopNarrativeSpeech()">Stop Voice</button>
+                        </div>
+
+                        <div id="narrativeStatus" class="status-message">
+                            Narrative summary has not been generated yet.
+                        </div>
+
+                        <h3>Narrative Text</h3>
+                        <div id="narrativeTextBox" class="narrative-box">
+                            Generate a narrative summary after a run completes.
+                        </div>
+                    </div>
+
+                    <div class="card span-12 soft-card-peach">
                         <h2>Planned Drill-Down</h2>
                         <div class="note-box">
                             Next improvement: add a selected-run detail panel showing warning events, selected video,
-                            detection counts, and settings used for that run.
+                            detection counts, selected object classes, and settings used for that run.
                         </div>
                     </div>
 
                 </div>
             </section>
 
-            <!-- VIDEO STREAM -->
             <section id="videoSection" class="section">
                 <div class="grid">
 
@@ -637,18 +704,23 @@
                     <div class="card span-8">
                         <h2>Live Browser Video Stream</h2>
                         <div class="note-box">
-                            OpenCV reads the selected MP4 video, YOLO applies detection, and the stream displays annotated frames.
-                            Warning events appear in the panel beside the video and are spoken by the browser.
+                            OpenCV reads the selected MP4 video, YOLO applies detection to the selected object classes,
+                            and the stream displays annotated frames. Warning events appear in the panel beside the video.
                         </div>
 
                         <div class="stream-actions">
                             <button class="refresh-button" onclick="startVideoStream()">Start / Restart Stream</button>
                             <button class="danger-button" onclick="stopVideoStream()">Stop Stream</button>
+                            <button class="secondary-button" onclick="testVoice()">Test Voice</button>
                         </div>
 
                         <div class="speech-toggle-row">
                             <input id="liveSpeechToggle" type="checkbox" checked onchange="toggleLiveSpeech()">
                             <label for="liveSpeechToggle" style="margin: 0;">Speak live warnings</label>
+                        </div>
+
+                        <div id="voiceStatus" class="status-message">
+                            Click Test Voice once if the browser does not speak automatically.
                         </div>
 
                         <div class="settings-preview" id="activeRuntimeSettingsCard">
@@ -666,7 +738,7 @@
                     <div class="card span-5 soft-card-peach">
                         <h2>Live Warnings</h2>
                         <div class="note-box">
-                            Warnings appear only when a new unique person is detected. The browser speaks each new warning once.
+                            Warnings appear only when a new unique person is detected. If person is not selected as an object class, live person warnings will not be generated.
                         </div>
 
                         <div class="button-row">
@@ -683,7 +755,6 @@
                 </div>
             </section>
 
-            <!-- SETTINGS -->
             <section id="settingsSection" class="section">
                 <div class="grid">
 
@@ -706,8 +777,20 @@
                             </div>
                         </div>
 
+                        <h3>Editable Object Classes</h3>
+                        <div class="note-box">
+                            Select which driving-profile object classes YOLO should detect. Person must be selected for unique-person warnings and spoken alerts.
+                        </div>
+
+                        <div id="objectClassCheckboxes" class="object-class-grid">
+                            Loading object classes...
+                        </div>
+
                         <div class="button-row">
                             <button class="refresh-button" onclick="saveDetectionSettingsFromForm()">Save Detection Settings</button>
+                            <button class="secondary-button" onclick="selectAllObjectClasses()">Select All</button>
+                            <button class="secondary-button" onclick="selectPersonOnly()">Person Only</button>
+                            <button class="secondary-button" onclick="selectVehicleClasses()">Vehicles Only</button>
                         </div>
 
                         <div id="settingsStatus" class="status-message">
@@ -736,20 +819,20 @@
                             <span class="metric-value">YOLOv8 nano</span>
                         </div>
                         <div class="metric">
-                            <span class="metric-label">Warning Layer</span>
+                            <span class="metric-label">Live Warning Layer</span>
                             <span class="metric-value">Local interpreter, no external LLM call</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Narrative Layer</span>
+                            <span class="metric-value">OpenAI if quota is available; fallback if not</span>
                         </div>
                         <div class="metric">
                             <span class="metric-label">Warning Trigger</span>
                             <span class="metric-value">Only when a new unique person is detected</span>
                         </div>
                         <div class="metric">
-                            <span class="metric-label">Live Voice</span>
-                            <span class="metric-value">Browser speech synthesis</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-label">Runtime Settings</span>
-                            <span class="metric-value">Persisted to runtime_settings.json</span>
+                            <span class="metric-label">Class Control</span>
+                            <span class="metric-value">Driving-profile classes only</span>
                         </div>
                     </div>
 
@@ -767,6 +850,9 @@
         let spokenWarningKeys = new Set();
         let isStreamActive = false;
         let liveSpeechEnabled = true;
+        let availableVoices = [];
+        let latestNarrativeText = "";
+        let availableObjectClasses = [];
 
         function showSection(sectionName) {
             document.getElementById("historySection").classList.remove("active");
@@ -781,7 +867,7 @@
                 document.getElementById("historySection").classList.add("active");
                 document.getElementById("navHistory").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Run History Dashboard";
-                document.getElementById("pageSubtitle").innerText = "Executive view of detection runs, frame sampling, processing workload, unique-person tracking, and warning events.";
+                document.getElementById("pageSubtitle").innerText = "Executive view of detection runs, frame sampling, processing workload, selected object classes, unique-person tracking, warning events, and AI narrative summaries.";
             }
 
             if (sectionName === "video") {
@@ -795,7 +881,7 @@
                 document.getElementById("settingsSection").classList.add("active");
                 document.getElementById("navSettings").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Settings";
-                document.getElementById("pageSubtitle").innerText = "Edit confidence and frame sampling, and review persisted runtime settings.";
+                document.getElementById("pageSubtitle").innerText = "Edit confidence, frame sampling, and selectable driving-profile object classes.";
             }
         }
 
@@ -845,6 +931,10 @@
         function setStatus(elementId, message, statusType = "") {
             const element = document.getElementById(elementId);
 
+            if (!element) {
+                return;
+            }
+
             element.className = "status-message";
 
             if (statusType === "ok") {
@@ -858,12 +948,68 @@
             element.innerText = message;
         }
 
+        function loadBrowserVoices() {
+            if (!("speechSynthesis" in window)) {
+                setStatus("voiceStatus", "Browser speech synthesis is not supported in this browser.", "error");
+                return;
+            }
+
+            availableVoices = window.speechSynthesis.getVoices();
+
+            if (availableVoices.length > 0) {
+                setStatus("voiceStatus", "Voice is ready. Click Test Voice to confirm audio.", "ok");
+            }
+        }
+
+        function getPreferredVoice() {
+            if (!availableVoices || availableVoices.length === 0) {
+                availableVoices = window.speechSynthesis.getVoices();
+            }
+
+            const englishVoice = availableVoices.find(voice =>
+                voice.lang && voice.lang.toLowerCase().startsWith("en")
+            );
+
+            return englishVoice || availableVoices[0] || null;
+        }
+
+        function speakText(message) {
+            if (!message) {
+                return;
+            }
+
+            if (!("speechSynthesis" in window)) {
+                setStatus("voiceStatus", "Browser speech synthesis is not supported.", "error");
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const spokenMessage = new SpeechSynthesisUtterance(message);
+            const preferredVoice = getPreferredVoice();
+
+            if (preferredVoice) {
+                spokenMessage.voice = preferredVoice;
+            }
+
+            spokenMessage.rate = 0.95;
+            spokenMessage.pitch = 1.0;
+            spokenMessage.volume = 1.0;
+
+            window.speechSynthesis.speak(spokenMessage);
+        }
+
         function toggleLiveSpeech() {
             const toggle = document.getElementById("liveSpeechToggle");
             liveSpeechEnabled = toggle.checked;
 
             if (!liveSpeechEnabled && "speechSynthesis" in window) {
                 window.speechSynthesis.cancel();
+                setStatus("voiceStatus", "Live speech is turned off.", "");
+            }
+
+            if (liveSpeechEnabled) {
+                setStatus("voiceStatus", "Live speech is turned on.", "ok");
             }
         }
 
@@ -872,18 +1018,88 @@
                 return;
             }
 
-            if (!("speechSynthesis" in window)) {
-                console.warn("Browser speech synthesis is not supported.");
-                return;
+            speakText(message);
+        }
+
+        function testVoice() {
+            liveSpeechEnabled = true;
+            document.getElementById("liveSpeechToggle").checked = true;
+
+            loadBrowserVoices();
+            speakText("Warning. Person close by.");
+        }
+
+        function getSelectedClassIdsFromCheckboxes() {
+            const checkboxes = document.querySelectorAll(".object-class-checkbox");
+            const selectedClassIds = [];
+
+            for (const checkbox of checkboxes) {
+                if (checkbox.checked) {
+                    selectedClassIds.push(Number(checkbox.value));
+                }
             }
 
-            const spokenMessage = new SpeechSynthesisUtterance(message);
+            return selectedClassIds;
+        }
 
-            spokenMessage.rate = 1.0;
-            spokenMessage.pitch = 1.0;
-            spokenMessage.volume = 1.0;
+        function setObjectClassCheckboxes(selectedClassIds) {
+            const selectedSet = new Set((selectedClassIds || []).map(Number));
+            const checkboxes = document.querySelectorAll(".object-class-checkbox");
 
-            window.speechSynthesis.speak(spokenMessage);
+            for (const checkbox of checkboxes) {
+                checkbox.checked = selectedSet.has(Number(checkbox.value));
+            }
+        }
+
+        function selectAllObjectClasses() {
+            const classIds = availableObjectClasses.map(objectClass => objectClass.id);
+            setObjectClassCheckboxes(classIds);
+        }
+
+        function selectPersonOnly() {
+            setObjectClassCheckboxes([0]);
+        }
+
+        function selectVehicleClasses() {
+            setObjectClassCheckboxes([2, 3, 5, 7]);
+        }
+
+        async function loadObjectClasses() {
+            const container = document.getElementById("objectClassCheckboxes");
+
+            try {
+                const data = await fetchJson("/object-classes");
+                availableObjectClasses = data.classes || [];
+
+                if (availableObjectClasses.length === 0) {
+                    container.innerHTML = "No object classes available.";
+                    return;
+                }
+
+                let html = "";
+
+                for (const objectClass of availableObjectClasses) {
+                    html += `
+                        <label class="object-class-option">
+                            <input
+                                class="object-class-checkbox"
+                                type="checkbox"
+                                value="${objectClass.id}"
+                            >
+                            ${objectClass.name}
+                        </label>
+                    `;
+                }
+
+                container.innerHTML = html;
+
+                if (currentRuntimeSettings && currentRuntimeSettings.selected_class_ids) {
+                    setObjectClassCheckboxes(currentRuntimeSettings.selected_class_ids);
+                }
+
+            } catch (error) {
+                container.innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
         }
 
         async function loadHealth() {
@@ -911,7 +1127,7 @@
                     createMetric("Model", data.model_name) +
                     createMetric("Default Confidence", data.minimum_confidence) +
                     createMetric("Default Frame Sampling", `Every ${data.process_every_n_frames} frame(s)`) +
-                    createMetric("Target Class IDs", data.target_class_ids.join(", "));
+                    createMetric("Default Classes", (data.target_class_names || []).join(", "));
             } catch (error) {
                 configDiv.innerHTML = `<p class="status-error">${error.message}</p>`;
             }
@@ -933,10 +1149,15 @@
                     videoSelect.value = settings.selected_video_path;
                 }
 
+                setObjectClassCheckboxes(settings.selected_class_ids || []);
+
+                const selectedClassNames = settings.selected_class_names || [];
+
                 const settingsHtml =
                     createMetric("Selected Video", settings.selected_video_path) +
                     createMetric("Minimum Confidence", settings.minimum_confidence) +
                     createMetric("Frame Sampling", `Every ${settings.process_every_n_frames} frame(s)`) +
+                    createMetric("Selected Classes", selectedClassNames.join(", ")) +
                     createMetric("Active Profile", `<span class="pill pill-green">${settings.active_profile}</span>`);
 
                 document.getElementById("runtimeSettingsCard").innerHTML = settingsHtml;
@@ -1047,6 +1268,7 @@
             const currentSettings = currentRuntimeSettings || {
                 minimum_confidence: 0.5,
                 process_every_n_frames: 90,
+                selected_class_ids: [0, 1, 2, 3, 5, 7, 9, 11],
                 active_profile: "driving"
             };
 
@@ -1054,6 +1276,7 @@
                 selected_video_path: selectedVideoPath,
                 minimum_confidence: Number(currentSettings.minimum_confidence),
                 process_every_n_frames: Number(currentSettings.process_every_n_frames),
+                selected_class_ids: currentSettings.selected_class_ids || [0, 1, 2, 3, 5, 7, 9, 11],
                 active_profile: "driving"
             };
 
@@ -1086,6 +1309,7 @@
         async function saveDetectionSettingsFromForm() {
             const minimumConfidence = Number(document.getElementById("confidenceInput").value);
             const processEveryNFrames = Number(document.getElementById("frameSamplingInput").value);
+            const selectedClassIds = getSelectedClassIdsFromCheckboxes();
 
             const currentSettings = currentRuntimeSettings || {
                 selected_video_path: "",
@@ -1107,10 +1331,16 @@
                 return;
             }
 
+            if (selectedClassIds.length === 0) {
+                setStatus("settingsStatus", "Select at least one object class.", "error");
+                return;
+            }
+
             const payload = {
                 selected_video_path: currentSettings.selected_video_path,
                 minimum_confidence: minimumConfidence,
                 process_every_n_frames: processEveryNFrames,
+                selected_class_ids: selectedClassIds,
                 active_profile: "driving"
             };
 
@@ -1157,8 +1387,7 @@
                     <tr>
                         <th>Timestamp</th>
                         <th>Video</th>
-                        <th>Profile</th>
-                        <th>Model</th>
+                        <th>Classes</th>
                         <th>Frame Skip</th>
                         <th>Stream Width</th>
                         <th>Frames Processed</th>
@@ -1183,12 +1412,13 @@
                         ? run.video_path.split("/").pop().split("\\").pop()
                         : "";
 
+                    const selectedClassNames = run.selected_class_names || [];
+
                     html += `
                         <tr>
                             <td>${safeValue(run.run_timestamp, "")}</td>
                             <td>${safeValue(videoName, "")}</td>
-                            <td><span class="pill pill-green">${safeValue(run.detection_profile, "")}</span></td>
-                            <td>${safeValue(run.model_name, "")}</td>
+                            <td>${safeValue(selectedClassNames.join(", "), "")}</td>
                             <td>${safeValue(run.process_every_n_frames, "")}</td>
                             <td>${safeValue(run.stream_frame_width, "")}</td>
                             <td>${formatNumber(run.frames_processed_by_yolo)}</td>
@@ -1300,6 +1530,10 @@
 
             clearWarnings();
 
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+
             image.src = `${API_BASE_URL}/video-stream?time=${new Date().getTime()}`;
 
             startWarningPolling();
@@ -1321,13 +1555,72 @@
             }
         }
 
+        async function generateNarrativeSummary() {
+            const narrativeBox = document.getElementById("narrativeTextBox");
+
+            setStatus("narrativeStatus", "Generating narrative summary. Please wait...", "");
+
+            narrativeBox.innerText = "Generating narrative summary...";
+
+            try {
+                const data = await fetchJson("/runs/latest/narrative-summary", {
+                    method: "POST"
+                });
+
+                latestNarrativeText = data.narrative_text || "";
+
+                narrativeBox.innerText = latestNarrativeText || "No narrative text returned.";
+
+                if (data.status === "ok") {
+                    setStatus("narrativeStatus", `Narrative generated using ${data.model_name}. Warning count: ${data.warning_count}.`, "ok");
+                } else if (data.status === "fallback") {
+                    setStatus("narrativeStatus", `Fallback narrative generated. OpenAI was unavailable. Warning count: ${data.warning_count}.`, "error");
+                } else {
+                    setStatus("narrativeStatus", data.message || "Narrative response received.", "");
+                }
+
+            } catch (error) {
+                latestNarrativeText = "";
+                narrativeBox.innerText = "Unable to generate narrative summary.";
+                setStatus("narrativeStatus", error.message, "error");
+            }
+        }
+
+        function speakNarrativeSummary() {
+            const narrativeBox = document.getElementById("narrativeTextBox");
+            const textToSpeak = latestNarrativeText || narrativeBox.innerText;
+
+            if (!textToSpeak || textToSpeak.includes("Generate a narrative")) {
+                setStatus("narrativeStatus", "Generate a narrative first, then click Speak Narrative.", "error");
+                return;
+            }
+
+            speakText(textToSpeak);
+            setStatus("narrativeStatus", "Speaking narrative summary.", "ok");
+        }
+
+        function stopNarrativeSpeech() {
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            setStatus("narrativeStatus", "Narrative speech stopped.", "");
+        }
+
         async function loadDashboard() {
             await loadHealth();
+            await loadObjectClasses();
             await loadConfig();
             await loadVideos();
             await loadRuntimeSettings();
             await loadRunHistory();
             await loadWarnings();
+
+            loadBrowserVoices();
+
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+            }
         }
 
         loadDashboard();
