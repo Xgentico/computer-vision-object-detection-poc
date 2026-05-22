@@ -30,27 +30,57 @@ Thumbs.db
 .env
 
 # =========================
+# Runtime settings
+# =========================
+runtime_settings.json
+
+# =========================
 # Logs
 # =========================
 *.log
 
 # =========================
-# Local output files
-# =========================
-outputs/
-*.json
-
-# Keep requirements and config files tracked
-!requirements.txt
-!config.py
-# =========================
-# Uploaded user videos
-# =========================
-uploads/
-# =========================
 # Downloaded model files
 # =========================
 *.pt
+
+# =========================
+# Runtime uploads
+# Keep folder, ignore uploaded files
+# =========================
+uploads/*
+!uploads/.gitkeep
+
+# =========================
+# Batch input folders
+# Keep folders, ignore runtime video files
+# =========================
+input_videos/pending/*
+!input_videos/pending/.gitkeep
+
+input_videos/processing/*
+!input_videos/processing/.gitkeep
+
+input_videos/completed/*
+!input_videos/completed/.gitkeep
+
+input_videos/failed/*
+!input_videos/failed/.gitkeep
+
+# =========================
+# Output folders
+# Keep folders, ignore generated outputs
+# =========================
+outputs/*
+!outputs/runs/
+outputs/runs/*
+!outputs/runs/.gitkeep
+
+# =========================
+# Local demo videos
+# Shared by ZIP, not GitHub
+# =========================
+videos/*.mp4
 
 # =========================
 # Temporary / misc

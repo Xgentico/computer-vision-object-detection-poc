@@ -49,6 +49,7 @@ MODEL_NAME = "yolov8n.pt"
 MIN_CONFIDENCE = 0.50
 
 # Alias kept for readability and future use.
+# Existing app files may still import MIN_CONFIDENCE.
 MINIMUM_CONFIDENCE = MIN_CONFIDENCE
 
 
@@ -84,7 +85,7 @@ LLM_WARNING_DISPLAY_FRAMES = 30
 # to a local summary.
 OPENAI_ENABLED = bool(OPENAI_API_KEY)
 
-# Existing service code expects this name.
+# Existing narrative service code expects this name.
 OPENAI_NARRATIVE_ENABLED = OPENAI_ENABLED
 
 # Keep this inexpensive for the POC.
@@ -111,3 +112,32 @@ STATIC_FOLDER = "static"
 VIDEOS_FOLDER = "videos"
 
 RUNTIME_SETTINGS_FILE = "runtime_settings.json"
+
+
+# =========================
+# BATCH PROCESSING SETTINGS
+# =========================
+
+# Batch mode lets the user drop multiple MP4 files into a folder
+# and process them one by one from the terminal.
+BATCH_MODE_ENABLED = True
+
+INPUT_VIDEOS_FOLDER = "input_videos"
+
+INPUT_PENDING_FOLDER = "input_videos/pending"
+INPUT_PROCESSING_FOLDER = "input_videos/processing"
+INPUT_COMPLETED_FOLDER = "input_videos/completed"
+INPUT_FAILED_FOLDER = "input_videos/failed"
+
+OUTPUT_RUNS_FOLDER = "outputs/runs"
+
+SUPPORTED_VIDEO_EXTENSIONS = [".mp4"]
+
+SAVE_PROCESSED_VIDEO = True
+SAVE_EVENTS_CSV = True
+SAVE_WARNINGS_JSON = True
+SAVE_SUMMARY_JSON = True
+
+# Batch mode should not call OpenAI by default.
+# The current dashboard can still call OpenAI for narrative summaries.
+BATCH_GENERATE_NARRATIVE_DEFAULT = False
