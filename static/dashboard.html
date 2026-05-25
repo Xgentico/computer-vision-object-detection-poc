@@ -222,6 +222,19 @@
             word-break: break-word;
         }
 
+        .metric-large {
+            font-size: 34px;
+            font-weight: 900;
+            color: var(--text);
+            margin-top: 8px;
+        }
+
+        .metric-subtitle {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
         .pill {
             display: inline-block;
             padding: 5px 11px;
@@ -240,6 +253,11 @@
         .pill-red {
             background: #fee2e2;
             color: #991b1b;
+        }
+
+        .pill-yellow {
+            background: #fef3c7;
+            color: #92400e;
         }
 
         .status-ok {
@@ -346,6 +364,15 @@
             object-fit: contain;
             border-radius: 12px;
             background: #000;
+        }
+
+        .replay-video {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #000;
+            margin-top: 12px;
         }
 
         .stream-actions,
@@ -474,6 +501,128 @@
         .object-class-option:hover { background: #f8fafc; }
         .object-class-option input { margin: 0; }
 
+        .file-list {
+            margin-top: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            font-weight: 900;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .file-meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+
+        .review-panel {
+            max-height: 780px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .review-header {
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        .review-title {
+            font-weight: 900;
+            color: var(--text);
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .review-subtitle {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 5px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .tab-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0 14px 0;
+        }
+
+        .tab-button {
+            padding: 8px 11px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: white;
+            color: #344054;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .tab-button.active {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .detail-section {
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+        .detail-title {
+            font-weight: 900;
+            color: var(--text);
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .warning-detail-item {
+            border: 1px solid #fecaca;
+            background: #fff7f7;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .small-button {
+            padding: 8px 11px;
+            font-size: 12px;
+            border-radius: 10px;
+        }
+
+        .link-button {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--blue);
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .link-button:hover { text-decoration: underline; }
+
         @media (max-width: 1300px) {
             .span-3,
             .span-4,
@@ -520,12 +669,13 @@
             <div class="brand">
                 <div class="brand-title">Object Detection Platform</div>
                 <div class="brand-subtitle">
-                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, spoken warnings, AI narrative, and run analytics.
+                    Modular computer vision POC for configurable detection profiles, browser video streaming, MP4 uploads, spoken warnings, AI narrative, batch processing, and run analytics.
                 </div>
             </div>
 
             <button class="nav-button active" id="navHistory" onclick="showSection('history')">Run History</button>
             <button class="nav-button" id="navVideo" onclick="showSection('video')">Video Stream</button>
+            <button class="nav-button" id="navBatch" onclick="showSection('batch')">Batch Processing</button>
             <button class="nav-button" id="navSettings" onclick="showSection('settings')">Settings</button>
 
             <div class="sidebar-footer">
@@ -573,8 +723,7 @@
                     <div class="card span-5 soft-card-peach">
                         <h2>Planned Drill-Down</h2>
                         <div class="note-box">
-                            Next improvement: add a selected-run detail panel showing warning events, selected video,
-                            detection counts, selected object classes, and settings used for that run.
+                            Batch Processing now acts as the review console for processed MP4 runs. The next logical improvement is a persistent database-backed run history.
                         </div>
                     </div>
                 </div>
@@ -690,6 +839,87 @@
                 </div>
             </section>
 
+            <section id="batchSection" class="section">
+                <div class="grid">
+                    <div class="card span-3 soft-card-blue">
+                        <h2>Pending</h2>
+                        <div class="metric-large" id="batchPendingCount">0</div>
+                        <div class="metric-subtitle">MP4 files waiting in pending</div>
+                    </div>
+
+                    <div class="card span-3 soft-card-yellow">
+                        <h2>Processing</h2>
+                        <div class="metric-large" id="batchProcessingCount">0</div>
+                        <div class="metric-subtitle">Files currently being processed</div>
+                    </div>
+
+                    <div class="card span-3 soft-card-green">
+                        <h2>Completed</h2>
+                        <div class="metric-large" id="batchCompletedCount">0</div>
+                        <div class="metric-subtitle">Original files moved to completed</div>
+                    </div>
+
+                    <div class="card span-3 soft-card-peach">
+                        <h2>Failed</h2>
+                        <div class="metric-large" id="batchFailedCount">0</div>
+                        <div class="metric-subtitle">Files that failed processing</div>
+                    </div>
+
+                    <div class="card span-12">
+                        <h2>Batch Upload and Controls</h2>
+                        <div class="grid">
+                            <div class="span-6">
+                                <div class="form-row">
+                                    <label for="batchVideoInput">Upload Batch Videos</label>
+                                    <input id="batchVideoInput" type="file" accept=".mp4,video/mp4" multiple>
+                                    <div class="form-help">
+                                        Select one or more MP4 files. They will be uploaded directly to input_videos/pending.
+                                    </div>
+                                </div>
+
+                                <div class="button-row">
+                                    <button class="refresh-button" onclick="uploadBatchVideos()">Upload to Pending</button>
+                                    <button class="secondary-button" onclick="loadBatchStatus()">Refresh Batch Status</button>
+                                </div>
+
+                                <div id="batchUploadStatus" class="status-message">
+                                    Select MP4 files, then click Upload to Pending.
+                                </div>
+                            </div>
+
+                            <div class="span-6">
+                                <div class="note-box">
+                                    Batch mode processes all MP4 files in pending. Each video gets a reviewable output run with processed video, browser replay video, summary JSON, warning JSON, events CSV, and LLM narrative summary.
+                                </div>
+
+                                <div class="button-row">
+                                    <button class="refresh-button" onclick="runBatchProcessing()">Run Batch Processing</button>
+                                    <button class="danger-button" onclick="stopBatchSpeech()">Stop Speech</button>
+                                </div>
+
+                                <div id="batchStatusMessage" class="status-message">
+                                    Batch status not loaded yet.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card span-7">
+                        <h2>Latest Batch Output Runs</h2>
+                        <div id="batchRunsCard">Loading...</div>
+                    </div>
+
+                    <div class="card span-5 soft-card-yellow">
+                        <h2>Selected Run Review</h2>
+                        <div id="batchRunReviewCard" class="review-panel">
+                            <div class="empty-warning-state">
+                                Select <strong>Review Run</strong> from the table on the left.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section id="settingsSection" class="section">
                 <div class="grid">
 
@@ -787,14 +1017,19 @@
         let autoSummaryInProgress = false;
         let latestRunFilenameBeforeStream = null;
         let completedRunFilenameHandled = null;
+        let selectedBatchRun = null;
+        let selectedBatchTab = "summary";
+        let batchReplayLoaded = false;
 
         function showSection(sectionName) {
             document.getElementById("historySection").classList.remove("active");
             document.getElementById("videoSection").classList.remove("active");
+            document.getElementById("batchSection").classList.remove("active");
             document.getElementById("settingsSection").classList.remove("active");
 
             document.getElementById("navHistory").classList.remove("active");
             document.getElementById("navVideo").classList.remove("active");
+            document.getElementById("navBatch").classList.remove("active");
             document.getElementById("navSettings").classList.remove("active");
 
             if (sectionName === "history") {
@@ -809,6 +1044,14 @@
                 document.getElementById("navVideo").classList.add("active");
                 document.getElementById("pageTitle").innerText = "Video Stream";
                 document.getElementById("pageSubtitle").innerText = "Live video, live warnings, and automatic run narrative summary in one demo view.";
+            }
+
+            if (sectionName === "batch") {
+                document.getElementById("batchSection").classList.add("active");
+                document.getElementById("navBatch").classList.add("active");
+                document.getElementById("pageTitle").innerText = "Batch Processing";
+                document.getElementById("pageSubtitle").innerText = "Upload MP4 files, run batch processing, and review summary, warnings, replay video, and technical results.";
+                loadBatchStatus();
             }
 
             if (sectionName === "settings") {
@@ -843,6 +1086,14 @@
             }
 
             return Number(value).toLocaleString();
+        }
+
+        function formatConfidence(value) {
+            if (value === null || value === undefined || value === "") {
+                return "n/a";
+            }
+
+            return Number(value).toFixed(2);
         }
 
         function calculateTotalDetections(counts) {
@@ -880,6 +1131,428 @@
             }
 
             element.innerText = message;
+        }
+
+        async function uploadBatchVideos() {
+            const fileInput = document.getElementById("batchVideoInput");
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                setStatus("batchUploadStatus", "Please select one or more MP4 files first.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+
+            for (const file of fileInput.files) {
+                if (!file.name.toLowerCase().endsWith(".mp4")) {
+                    setStatus("batchUploadStatus", "Only MP4 files are supported.", "error");
+                    return;
+                }
+
+                formData.append("files", file);
+            }
+
+            setStatus("batchUploadStatus", `Uploading ${fileInput.files.length} file(s) to pending...`, "");
+
+            try {
+                const data = await fetchJson("/batch/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (data.status !== "ok") {
+                    setStatus(
+                        "batchUploadStatus",
+                        data.message || "No files were uploaded.",
+                        "error"
+                    );
+                    return;
+                }
+
+                setStatus(
+                    "batchUploadStatus",
+                    `Uploaded ${data.uploaded_count} file(s) to pending. Rejected: ${data.rejected_count}.`,
+                    "ok"
+                );
+
+                fileInput.value = "";
+
+                await loadBatchStatus();
+
+            } catch (error) {
+                setStatus("batchUploadStatus", error.message, "error");
+            }
+        }
+
+        function renderBatchRuns(runs) {
+            const container = document.getElementById("batchRunsCard");
+
+            if (!runs || runs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-warning-state">
+                        No batch output runs found yet.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "<table>";
+            html += `
+                <tr>
+                    <th>Run</th>
+                    <th>Video</th>
+                    <th>People</th>
+                    <th>Warnings</th>
+                    <th>Action</th>
+                </tr>
+            `;
+
+            for (const run of runs) {
+                const statusClass = run.status === "completed" ? "pill-green" : "pill-yellow";
+                const narrativeStatus = run.narrative_status
+                    ? `<br><span class="pill ${run.narrative_status === "ok" ? "pill-green" : "pill-yellow"}">${run.narrative_status}</span>`
+                    : "";
+
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${safeValue(run.run_id, "")}</strong><br>
+                            <span class="pill ${statusClass}">${safeValue(run.status, "unknown")}</span>
+                            ${narrativeStatus}
+                        </td>
+                        <td>${safeValue(run.original_filename, "")}</td>
+                        <td><strong>${formatNumber(run.unique_persons)}</strong></td>
+                        <td><span class="pill pill-red">${formatNumber(run.warnings_generated)}</span></td>
+                        <td>
+                            <button class="secondary-button small-button" onclick="loadBatchRunDetail('${safeValue(run.run_id, "")}')">
+                                Review Run
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            html += "</table>";
+
+            container.innerHTML = html;
+        }
+
+        function renderBatchReviewShell() {
+            const container = document.getElementById("batchRunReviewCard");
+
+            if (!selectedBatchRun) {
+                container.innerHTML = `
+                    <div class="empty-warning-state">
+                        Select <strong>Review Run</strong> from the table on the left.
+                    </div>
+                `;
+                return;
+            }
+
+            const summary = selectedBatchRun.summary || {};
+
+            container.innerHTML = `
+                <div class="review-header">
+                    <div class="review-title">${safeValue(selectedBatchRun.run_id, "")}</div>
+                    <div class="review-subtitle">
+                        ${safeValue(summary.original_filename, "")}<br>
+                        Unique persons: ${formatNumber(summary.unique_persons)} |
+                        Warnings: ${formatNumber(selectedBatchRun.warning_count)}
+                    </div>
+                </div>
+
+                <div class="tab-row">
+                    <button class="tab-button ${selectedBatchTab === "summary" ? "active" : ""}" onclick="showBatchReviewTab('summary')">Summary</button>
+                    <button class="tab-button ${selectedBatchTab === "warnings" ? "active" : ""}" onclick="showBatchReviewTab('warnings')">Warnings</button>
+                    <button class="tab-button ${selectedBatchTab === "video" ? "active" : ""}" onclick="showBatchReviewTab('video')">Video Replay</button>
+                    <button class="tab-button ${selectedBatchTab === "technical" ? "active" : ""}" onclick="showBatchReviewTab('technical')">Technical</button>
+                </div>
+
+                <div id="batchReviewContent"></div>
+            `;
+
+            renderBatchReviewContent();
+        }
+
+        function showBatchReviewTab(tabName) {
+            selectedBatchTab = tabName;
+            renderBatchReviewShell();
+        }
+
+        function renderBatchReviewContent() {
+            const content = document.getElementById("batchReviewContent");
+
+            if (!selectedBatchRun || !content) {
+                return;
+            }
+
+            if (selectedBatchTab === "summary") {
+                renderBatchSummaryTab(content);
+            }
+
+            if (selectedBatchTab === "warnings") {
+                renderBatchWarningsTab(content);
+            }
+
+            if (selectedBatchTab === "video") {
+                renderBatchVideoTab(content);
+            }
+
+            if (selectedBatchTab === "technical") {
+                renderBatchTechnicalTab(content);
+            }
+        }
+
+        function renderBatchSummaryTab(content) {
+            const narrativeText = selectedBatchRun.narrative_text || "No LLM narrative summary found for this run.";
+            const narrativeStatus = selectedBatchRun.narrative_status || "not found";
+            const modelName = selectedBatchRun.narrative_model_name || "not available";
+
+            content.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-title">LLM Narrative Summary</div>
+                    ${createMetric("Narrative Status", narrativeStatus)}
+                    ${createMetric("Model", modelName)}
+                    <div class="button-row">
+                        <button class="secondary-button small-button" onclick="speakBatchSummary()">Speak Summary</button>
+                        <button class="danger-button small-button" onclick="stopBatchSpeech()">Stop</button>
+                    </div>
+                    <div class="narrative-box">${narrativeText}</div>
+                </div>
+            `;
+        }
+
+        function renderBatchWarningsTab(content) {
+            const warnings = selectedBatchRun.warnings || [];
+
+            let warningsHtml = "";
+
+            if (warnings.length === 0) {
+                warningsHtml = `
+                    <div class="empty-warning-state">
+                        No warnings found for this run.
+                    </div>
+                `;
+            } else {
+                for (const warning of warnings) {
+                    warningsHtml += `
+                        <div class="warning-detail-item">
+                            <div class="warning-title">${safeValue(warning.warning_text, "Warning")}</div>
+                            <div class="warning-meta">
+                                Person ID: ${safeValue(warning.person_id, "n/a")}<br>
+                                Frame: ${safeValue(warning.frame_number, "n/a")}<br>
+                                Region: ${safeValue(warning.screen_region, "n/a")}<br>
+                                Confidence: ${formatConfidence(warning.confidence)}<br>
+                                Event: ${safeValue(warning.event_type, "n/a")}<br>
+                                Time: ${safeValue(warning.timestamp, "n/a")}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            content.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-title">Warnings (${formatNumber(warnings.length)})</div>
+                    <div class="button-row">
+                        <button class="secondary-button small-button" onclick="speakBatchWarnings()">Speak Warnings</button>
+                        <button class="danger-button small-button" onclick="stopBatchSpeech()">Stop</button>
+                    </div>
+                    ${warningsHtml}
+                </div>
+            `;
+        }
+
+        function renderBatchVideoTab(content) {
+            const runId = selectedBatchRun.run_id;
+            const videoUrl = `/batch/runs/${encodeURIComponent(runId)}/processed-video`;
+
+            if (!selectedBatchRun.exists || (!selectedBatchRun.exists.processed_video && !selectedBatchRun.exists.processed_video_web)) {
+                content.innerHTML = `
+                    <div class="empty-warning-state">
+                        No processed video file was found for this run.
+                    </div>
+                `;
+                return;
+            }
+
+            const videoHtml = batchReplayLoaded
+                ? `
+                    <video class="replay-video" controls preload="metadata">
+                        <source src="${videoUrl}" type="video/mp4">
+                        Your browser does not support video playback.
+                    </video>
+                    <a class="link-button" href="${videoUrl}" target="_blank">Open video in new tab</a>
+                `
+                : `
+                    <div class="empty-warning-state">
+                        Video replay is not loaded yet. Click the blue Load Processed Video Replay button above this message to load it.
+                    </div>
+                `;
+
+            content.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-title">Processed Video Replay</div>
+                    <div class="note-box">
+                        Replay loads only when requested to avoid slowing down the page with large MP4 files.
+                    </div>
+                    <div class="button-row">
+                        <button class="refresh-button small-button" onclick="loadBatchReplayVideo()">Load Processed Video Replay</button>
+                    </div>
+                    ${videoHtml}
+                </div>
+            `;
+        }
+
+        function loadBatchReplayVideo() {
+            batchReplayLoaded = true;
+            selectedBatchTab = "video";
+            renderBatchReviewShell();
+        }
+
+        function renderBatchTechnicalTab(content) {
+            const summary = selectedBatchRun.summary || {};
+            const counts = summary.total_detection_counts || {};
+            const totalDetections = calculateTotalDetections(counts);
+            const topCounts = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => `${name}: ${formatNumber(count)}`)
+                .join(", ");
+
+            content.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-title">Run Settings and Counts</div>
+                    ${createMetric("Run ID", selectedBatchRun.run_id)}
+                    ${createMetric("Original Video", summary.original_filename)}
+                    ${createMetric("Status", summary.status)}
+                    ${createMetric("Model", summary.model)}
+                    ${createMetric("Confidence", summary.minimum_confidence)}
+                    ${createMetric("Frame Sampling", `Every ${summary.process_every_n_frames} frame(s)`)}
+                    ${createMetric("Frames Read", formatNumber(summary.frames_read))}
+                    ${createMetric("Frames Processed", formatNumber(summary.frames_processed))}
+                    ${createMetric("Unique Persons", formatNumber(summary.unique_persons))}
+                    ${createMetric("Warnings", formatNumber(summary.warnings_generated))}
+                    ${createMetric("Total Detections", formatNumber(totalDetections))}
+                    ${createMetric("Top Counts", topCounts || "none")}
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-title">Output Files</div>
+                    ${createMetric("Processed Video", selectedBatchRun.files.processed_video)}
+                    ${createMetric("Web Replay Video", selectedBatchRun.files.processed_video_web)}
+                    ${createMetric("Summary JSON", selectedBatchRun.files.summary)}
+                    ${createMetric("Warnings JSON", selectedBatchRun.files.warnings)}
+                    ${createMetric("Events CSV", selectedBatchRun.files.events)}
+                    ${createMetric("Narrative JSON", selectedBatchRun.files.narrative)}
+                </div>
+            `;
+        }
+
+        async function loadBatchRunDetail(runId) {
+            if (!runId) {
+                return;
+            }
+
+            const container = document.getElementById("batchRunReviewCard");
+
+            container.innerHTML = `
+                <div class="empty-warning-state">
+                    Loading review for ${runId}...
+                </div>
+            `;
+
+            try {
+                const data = await fetchJson(`/batch/runs/${encodeURIComponent(runId)}`);
+
+                if (data.status !== "ok") {
+                    container.innerHTML = `
+                        <div class="empty-warning-state">
+                            Unable to load selected run: ${data.message || "Unknown error"}
+                        </div>
+                    `;
+                    return;
+                }
+
+                selectedBatchRun = data;
+                selectedBatchTab = "summary";
+                batchReplayLoaded = false;
+
+                renderBatchReviewShell();
+
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-warning-state">
+                        Unable to load batch run detail: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadBatchStatus() {
+            try {
+                const data = await fetchJson("/batch/status");
+
+                document.getElementById("batchPendingCount").innerText = formatNumber(data.counts.pending);
+                document.getElementById("batchProcessingCount").innerText = formatNumber(data.counts.processing);
+                document.getElementById("batchCompletedCount").innerText = formatNumber(data.counts.completed);
+                document.getElementById("batchFailedCount").innerText = formatNumber(data.counts.failed);
+
+                const runningText = data.is_running ? "Batch processing is currently running." : "Batch processor is idle.";
+                const statusType = data.is_running ? "" : "ok";
+
+                setStatus(
+                    "batchStatusMessage",
+                    `${runningText} Output runs found: ${formatNumber(data.counts.output_runs)}.`,
+                    statusType
+                );
+
+                renderBatchRuns(data.runs);
+
+            } catch (error) {
+                setStatus("batchStatusMessage", error.message, "error");
+                document.getElementById("batchRunsCard").innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
+        }
+
+        async function runBatchProcessing() {
+            setStatus("batchStatusMessage", "Batch processing started. This may take several minutes...", "");
+
+            try {
+                const data = await fetchJson("/batch/run", {
+                    method: "POST"
+                });
+
+                if (data.status === "ok") {
+                    setStatus(
+                        "batchStatusMessage",
+                        `Batch complete. Videos found: ${data.videos_found}. Completed: ${data.completed}. Failed: ${data.failed}.`,
+                        "ok"
+                    );
+                } else if (data.status === "no_files") {
+                    setStatus(
+                        "batchStatusMessage",
+                        "No pending MP4 files found. Upload files to pending and try again.",
+                        ""
+                    );
+                } else if (data.status === "already_running") {
+                    setStatus(
+                        "batchStatusMessage",
+                        "A batch run is already in progress.",
+                        "error"
+                    );
+                } else {
+                    setStatus(
+                        "batchStatusMessage",
+                        data.message || "Batch request completed.",
+                        ""
+                    );
+                }
+
+                await loadBatchStatus();
+
+            } catch (error) {
+                setStatus("batchStatusMessage", error.message, "error");
+            }
         }
 
         function loadBrowserVoices() {
@@ -931,6 +1604,48 @@
             spokenMessage.volume = 1.0;
 
             window.speechSynthesis.speak(spokenMessage);
+        }
+
+        function stopBatchSpeech() {
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            setStatus("batchStatusMessage", "Speech stopped.", "");
+        }
+
+        function speakBatchSummary() {
+            if (!selectedBatchRun) {
+                return;
+            }
+
+            const textToSpeak = selectedBatchRun.narrative_text || "No summary is available for this run.";
+
+            speakText(textToSpeak);
+        }
+
+        function speakBatchWarnings() {
+            if (!selectedBatchRun) {
+                return;
+            }
+
+            const warnings = selectedBatchRun.warnings || [];
+
+            if (warnings.length === 0) {
+                speakText("No warnings were found for this run.");
+                return;
+            }
+
+            const warningText = warnings.map((warning, index) => {
+                const warningNumber = index + 1;
+                const frame = safeValue(warning.frame_number, "unknown frame");
+                const region = safeValue(warning.screen_region, "unknown area");
+                const message = safeValue(warning.warning_text, "Person warning.");
+
+                return `Warning ${warningNumber}. Frame ${frame}. ${message} Region: ${region}.`;
+            }).join(" ");
+
+            speakText(warningText);
         }
 
         function toggleLiveSpeech() {
@@ -1680,6 +2395,7 @@
             await loadRuntimeSettings();
             await loadRunHistory();
             await loadWarnings();
+            await loadBatchStatus();
 
             loadBrowserVoices();
 

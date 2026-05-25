@@ -1,6 +1,11 @@
+import csv
 import json
 import os
 import glob
+import shutil
+import threading
+from pathlib import Path
+from datetime import datetime
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +19,13 @@ from config import (
     MODEL_NAME,
     MIN_CONFIDENCE,
     PROCESS_EVERY_N_FRAMES,
-    MAX_DISTANCE_BETWEEN_PERSONS
+    MAX_DISTANCE_BETWEEN_PERSONS,
+    INPUT_PENDING_FOLDER,
+    INPUT_PROCESSING_FOLDER,
+    INPUT_COMPLETED_FOLDER,
+    INPUT_FAILED_FOLDER,
+    OUTPUT_RUNS_FOLDER,
+    BATCH_MODE_ENABLED,
 )
 
 from profiles.profile_loader import load_profile
@@ -26,21 +37,31 @@ from runtime_settings import (
     update_runtime_settings,
     save_uploaded_video,
     DRIVING_OBJECT_CLASSES,
-    get_object_class_names
+    get_object_class_names,
 )
 
 from warning_state import (
     get_warning_events,
-    clear_warning_events
+    clear_warning_events,
 )
 
 from openai_narrative_service import generate_narrative_from_latest_run
 
+from batch_file_utils import (
+    ensure_batch_folders,
+    get_pending_video_files,
+)
+
+from batch_processor import process_pending_video
+
 
 app = FastAPI(
     title="Computer Vision Object Detection API",
-    version="0.6.0"
+    version="1.1.0"
 )
+
+# Prevent two browser requests from starting two batch runs at the same time.
+batch_run_lock = threading.Lock()
 
 # Allow browser access during local development.
 # Later we can restrict this.
@@ -198,6 +219,502 @@ def video_stream():
 @app.post("/runs/latest/narrative-summary")
 def post_latest_run_narrative_summary():
     return generate_narrative_from_latest_run()
+
+
+# =========================
+# BATCH PROCESSING HELPERS
+# =========================
+
+def get_timestamp_string() -> str:
+    """
+    Return timestamp formatted for safe duplicate filenames.
+    """
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def get_safe_upload_destination(folder_path: Path, filename: str) -> Path:
+    """
+    Build a safe upload destination path.
+
+    If the file already exists, append a timestamp.
+    """
+    original_path = Path(filename)
+    safe_filename = original_path.name
+
+    destination_path = folder_path / safe_filename
+
+    if not destination_path.exists():
+        return destination_path
+
+    timestamp = get_timestamp_string()
+
+    return folder_path / f"{original_path.stem}_{timestamp}{original_path.suffix}"
+
+
+def get_file_info(folder_path: str):
+    """
+    Return basic file info for files in a folder.
+
+    This is used by the dashboard batch status page.
+    """
+    folder = Path(folder_path)
+
+    if not folder.exists():
+        return []
+
+    files = []
+
+    for file_path in sorted(folder.iterdir()):
+        if not file_path.is_file():
+            continue
+
+        if file_path.name == ".gitkeep":
+            continue
+
+        stat = file_path.stat()
+
+        files.append({
+            "name": file_path.name,
+            "path": str(file_path),
+            "size_bytes": stat.st_size,
+            "size_mb": round(stat.st_size / (1024 * 1024), 2),
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds")
+        })
+
+    return files
+
+
+def read_json_file_if_exists(file_path: Path, default_value):
+    """
+    Read a JSON file if it exists.
+
+    Returns default_value if the file does not exist.
+    Raises an exception if the file exists but cannot be parsed.
+    """
+    if not file_path.exists():
+        return default_value
+
+    with file_path.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def read_csv_preview_if_exists(file_path: Path, max_rows: int = 50):
+    """
+    Read a small preview of a CSV file.
+
+    This prevents the browser from loading a huge events file.
+    """
+    if not file_path.exists():
+        return []
+
+    rows = []
+
+    with file_path.open("r", encoding="utf-8", newline="") as file:
+        reader = csv.DictReader(file)
+
+        for index, row in enumerate(reader):
+            if index >= max_rows:
+                break
+
+            rows.append(row)
+
+    return rows
+
+
+def get_safe_batch_run_folder(run_id: str):
+    """
+    Resolve a batch run folder safely under OUTPUT_RUNS_FOLDER.
+
+    This prevents path traversal like ../../somefile.
+    """
+    output_runs_root = Path(OUTPUT_RUNS_FOLDER).resolve()
+    requested_folder = (output_runs_root / run_id).resolve()
+
+    try:
+        requested_folder.relative_to(output_runs_root)
+    except ValueError:
+        return None
+
+    if not requested_folder.exists() or not requested_folder.is_dir():
+        return None
+
+    return requested_folder
+
+
+def get_batch_output_runs():
+    """
+    Return latest batch output run folders from outputs/runs.
+
+    Each batch run folder may contain:
+    - processed_video.mp4
+    - processed_video_web.mp4
+    - summary.json
+    - warnings.json
+    - events.csv
+    - narrative_summary.json
+    """
+    runs_folder = Path(OUTPUT_RUNS_FOLDER)
+
+    if not runs_folder.exists():
+        return []
+
+    run_folders = [
+        folder for folder in runs_folder.iterdir()
+        if folder.is_dir()
+    ]
+
+    run_folders = sorted(
+        run_folders,
+        key=lambda folder: folder.stat().st_mtime,
+        reverse=True
+    )
+
+    runs = []
+
+    for folder in run_folders:
+        summary_path = folder / "summary.json"
+        warnings_path = folder / "warnings.json"
+        events_path = folder / "events.csv"
+        narrative_path = folder / "narrative_summary.json"
+        processed_video_path = folder / "processed_video.mp4"
+        processed_video_web_path = folder / "processed_video_web.mp4"
+
+        summary = {}
+        narrative = {}
+
+        if summary_path.exists():
+            try:
+                with summary_path.open("r", encoding="utf-8") as file:
+                    summary = json.load(file)
+            except Exception as error:
+                summary = {
+                    "status": "error",
+                    "error_message": str(error)
+                }
+
+        if narrative_path.exists():
+            try:
+                with narrative_path.open("r", encoding="utf-8") as file:
+                    narrative = json.load(file)
+            except Exception as error:
+                narrative = {
+                    "status": "error",
+                    "error_message": str(error)
+                }
+
+        runs.append({
+            "run_id": folder.name,
+            "folder": str(folder),
+            "status": summary.get("status", "unknown"),
+            "original_filename": summary.get("original_filename"),
+            "created_at": summary.get("created_at"),
+            "frames_read": summary.get("frames_read"),
+            "frames_processed": summary.get("frames_processed"),
+            "unique_persons": summary.get("unique_persons"),
+            "warnings_generated": summary.get("warnings_generated"),
+            "total_detection_counts": summary.get("total_detection_counts", {}),
+
+            "summary_exists": summary_path.exists(),
+            "warnings_exists": warnings_path.exists(),
+            "events_exists": events_path.exists(),
+            "narrative_exists": narrative_path.exists(),
+            "processed_video_exists": processed_video_path.exists(),
+            "processed_video_web_exists": processed_video_web_path.exists(),
+
+            "summary_path": str(summary_path),
+            "warnings_path": str(warnings_path),
+            "events_path": str(events_path),
+            "narrative_path": str(narrative_path),
+            "processed_video_path": str(processed_video_path),
+            "processed_video_web_path": str(processed_video_web_path),
+
+            "narrative_status": narrative.get("status") if narrative else None,
+            "narrative_model_name": narrative.get("model_name") if narrative else None,
+        })
+
+    return runs
+
+
+# =========================
+# BATCH PROCESSING ENDPOINTS
+# =========================
+
+@app.get("/batch/status")
+def get_batch_status():
+    """
+    Return batch folder status and latest batch output runs.
+
+    This does not start processing. It only reports current state.
+    """
+    ensure_batch_folders()
+
+    pending_files = get_file_info(INPUT_PENDING_FOLDER)
+    processing_files = get_file_info(INPUT_PROCESSING_FOLDER)
+    completed_files = get_file_info(INPUT_COMPLETED_FOLDER)
+    failed_files = get_file_info(INPUT_FAILED_FOLDER)
+    batch_runs = get_batch_output_runs()
+
+    return {
+        "status": "ok",
+        "batch_mode_enabled": BATCH_MODE_ENABLED,
+        "is_running": batch_run_lock.locked(),
+        "folders": {
+            "pending": INPUT_PENDING_FOLDER,
+            "processing": INPUT_PROCESSING_FOLDER,
+            "completed": INPUT_COMPLETED_FOLDER,
+            "failed": INPUT_FAILED_FOLDER,
+            "output_runs": OUTPUT_RUNS_FOLDER
+        },
+        "counts": {
+            "pending": len(pending_files),
+            "processing": len(processing_files),
+            "completed": len(completed_files),
+            "failed": len(failed_files),
+            "output_runs": len(batch_runs)
+        },
+        "files": {
+            "pending": pending_files,
+            "processing": processing_files,
+            "completed": completed_files,
+            "failed": failed_files
+        },
+        "runs": batch_runs[:20]
+    }
+
+
+@app.post("/batch/upload")
+def upload_batch_videos(files: list[UploadFile] = File(...)):
+    """
+    Upload one or more MP4 files directly into input_videos/pending.
+
+    This supports the Batch Processing UI.
+    """
+    ensure_batch_folders()
+
+    pending_folder = Path(INPUT_PENDING_FOLDER)
+    pending_folder.mkdir(parents=True, exist_ok=True)
+
+    uploaded_files = []
+    rejected_files = []
+
+    for uploaded_file in files:
+        original_filename = uploaded_file.filename or ""
+
+        if not original_filename.lower().endswith(".mp4"):
+            rejected_files.append({
+                "filename": original_filename,
+                "reason": "Only MP4 files are supported."
+            })
+            continue
+
+        destination_path = get_safe_upload_destination(
+            folder_path=pending_folder,
+            filename=original_filename
+        )
+
+        try:
+            with destination_path.open("wb") as output_file:
+                shutil.copyfileobj(uploaded_file.file, output_file)
+
+            uploaded_files.append({
+                "filename": original_filename,
+                "saved_filename": destination_path.name,
+                "saved_path": str(destination_path),
+                "size_bytes": destination_path.stat().st_size,
+                "size_mb": round(destination_path.stat().st_size / (1024 * 1024), 2)
+            })
+
+        except Exception as error:
+            rejected_files.append({
+                "filename": original_filename,
+                "reason": str(error)
+            })
+
+    return {
+        "status": "ok" if uploaded_files else "error",
+        "message": f"Uploaded {len(uploaded_files)} file(s) to pending.",
+        "uploaded_count": len(uploaded_files),
+        "rejected_count": len(rejected_files),
+        "uploaded_files": uploaded_files,
+        "rejected_files": rejected_files
+    }
+
+
+@app.post("/batch/run")
+def post_batch_run():
+    """
+    Run batch processing from the dashboard/API.
+
+    For now, this is synchronous:
+    - The API request waits until batch processing finishes.
+    - This is acceptable for the local POC.
+    - Later we can move this to a background worker.
+    """
+    if not BATCH_MODE_ENABLED:
+        return {
+            "status": "disabled",
+            "message": "Batch mode is disabled in config.py."
+        }
+
+    if not batch_run_lock.acquire(blocking=False):
+        return {
+            "status": "already_running",
+            "message": "A batch run is already in progress."
+        }
+
+    try:
+        ensure_batch_folders()
+
+        pending_files = get_pending_video_files()
+
+        if not pending_files:
+            return {
+                "status": "no_files",
+                "message": "No pending MP4 files found.",
+                "videos_found": 0,
+                "completed": 0,
+                "failed": 0,
+                "results": []
+            }
+
+        results = []
+
+        for pending_video_path in pending_files:
+            result = process_pending_video(pending_video_path)
+            results.append(result)
+
+        completed_results = [
+            result for result in results
+            if result.get("status") == "completed"
+        ]
+
+        failed_results = [
+            result for result in results
+            if result.get("status") == "failed"
+        ]
+
+        return {
+            "status": "ok",
+            "message": "Batch processing complete.",
+            "videos_found": len(results),
+            "completed": len(completed_results),
+            "failed": len(failed_results),
+            "results": results
+        }
+
+    finally:
+        batch_run_lock.release()
+
+
+@app.get("/batch/runs/{run_id}")
+def get_batch_run_detail(run_id: str):
+    """
+    Return review details for one batch output run.
+
+    This powers the Review Run panel in the dashboard.
+    """
+    ensure_batch_folders()
+
+    run_folder = get_safe_batch_run_folder(run_id)
+
+    if run_folder is None:
+        return {
+            "status": "not_found",
+            "message": f"Batch run not found: {run_id}"
+        }
+
+    summary_path = run_folder / "summary.json"
+    warnings_path = run_folder / "warnings.json"
+    events_path = run_folder / "events.csv"
+    narrative_path = run_folder / "narrative_summary.json"
+    processed_video_path = run_folder / "processed_video.mp4"
+    processed_video_web_path = run_folder / "processed_video_web.mp4"
+
+    try:
+        summary = read_json_file_if_exists(summary_path, {})
+        warnings = read_json_file_if_exists(warnings_path, [])
+        narrative = read_json_file_if_exists(narrative_path, {})
+        events_preview = read_csv_preview_if_exists(events_path, max_rows=50)
+
+        if not isinstance(warnings, list):
+            warnings = []
+
+        return {
+            "status": "ok",
+            "run_id": run_folder.name,
+            "folder": str(run_folder),
+            "files": {
+                "processed_video": str(processed_video_path),
+                "processed_video_web": str(processed_video_web_path),
+                "summary": str(summary_path),
+                "warnings": str(warnings_path),
+                "events": str(events_path),
+                "narrative": str(narrative_path),
+            },
+            "exists": {
+                "processed_video": processed_video_path.exists(),
+                "processed_video_web": processed_video_web_path.exists(),
+                "summary": summary_path.exists(),
+                "warnings": warnings_path.exists(),
+                "events": events_path.exists(),
+                "narrative": narrative_path.exists(),
+            },
+            "summary": summary,
+            "warnings": warnings,
+            "warning_count": len(warnings),
+            "events_preview": events_preview,
+            "events_preview_count": len(events_preview),
+            "narrative": narrative,
+            "narrative_text": narrative.get("narrative_text", "") if narrative else "",
+            "narrative_status": narrative.get("status", "not_found") if narrative else "not_found",
+            "narrative_model_name": narrative.get("model_name", "") if narrative else "",
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": f"Could not read batch run detail for {run_id}.",
+            "error": str(error)
+        }
+
+
+@app.get("/batch/runs/{run_id}/processed-video")
+def get_batch_processed_video(run_id: str):
+    """
+    Return the processed video for optional browser replay.
+
+    Prefer processed_video_web.mp4 because it is browser-compatible.
+    Fall back to processed_video.mp4 for older runs.
+    """
+    run_folder = get_safe_batch_run_folder(run_id)
+
+    if run_folder is None:
+        return {
+            "status": "not_found",
+            "message": f"Batch run not found: {run_id}"
+        }
+
+    browser_video_path = run_folder / "processed_video_web.mp4"
+    original_processed_video_path = run_folder / "processed_video.mp4"
+
+    if browser_video_path.exists():
+        return FileResponse(
+            path=str(browser_video_path),
+            media_type="video/mp4",
+            filename=f"{run_id}_processed_video_web.mp4"
+        )
+
+    if original_processed_video_path.exists():
+        return FileResponse(
+            path=str(original_processed_video_path),
+            media_type="video/mp4",
+            filename=f"{run_id}_processed_video.mp4"
+        )
+
+    return {
+        "status": "not_found",
+        "message": f"Processed video not found for batch run: {run_id}"
+    }
 
 
 # =========================

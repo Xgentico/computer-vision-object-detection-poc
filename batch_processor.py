@@ -4,6 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from config import BATCH_GENERATE_NARRATIVE_DEFAULT
+
 from batch_file_utils import (
     build_run_folder_name,
     ensure_batch_folders,
@@ -15,6 +17,7 @@ from batch_file_utils import (
 )
 
 from video_processor import process_video_file
+from batch_narrative_service import generate_batch_narrative_for_run_folder
 
 
 def get_timestamp_string() -> str:
@@ -110,6 +113,38 @@ def write_failure_summary(
         json.dump(failure_summary, file, indent=2)
 
 
+def generate_narrative_if_enabled(run_folder: Path) -> Dict:
+    """
+    Generate an OpenAI or fallback narrative summary for a successful batch run.
+
+    This writes:
+        narrative_summary.json
+
+    Returns:
+        Narrative result dictionary.
+    """
+    if not BATCH_GENERATE_NARRATIVE_DEFAULT:
+        return {
+            "status": "skipped",
+            "message": "Batch narrative generation is disabled in config.py.",
+            "narrative_text": "",
+            "error_message": None,
+        }
+
+    print("")
+    print("Generating batch narrative summary...")
+
+    narrative_result = generate_batch_narrative_for_run_folder(str(run_folder))
+
+    print(f"Narrative status: {narrative_result.get('status')}")
+    print(f"Narrative file: {narrative_result.get('narrative_path')}")
+
+    if narrative_result.get("error_message"):
+        print(f"Narrative warning: {narrative_result.get('error_message')}")
+
+    return narrative_result
+
+
 def process_pending_video(pending_video_path: Path) -> Dict:
     """
     Process one pending MP4 file.
@@ -118,6 +153,7 @@ def process_pending_video(pending_video_path: Path) -> Dict:
     - Move pending video to processing
     - Create output run folder
     - Process video
+    - Generate narrative_summary.json automatically
     - Move original video to completed if successful
     - Move original video to failed if unsuccessful
     """
@@ -132,6 +168,7 @@ def process_pending_video(pending_video_path: Path) -> Dict:
     run_folder = output_runs_folder / run_folder_name
 
     processing_video_path = None
+    narrative_result = None
 
     print("")
     print("-" * 60)
@@ -154,6 +191,8 @@ def process_pending_video(pending_video_path: Path) -> Dict:
             generate_narrative=False,
         )
 
+        narrative_result = generate_narrative_if_enabled(run_folder)
+
         completed_video_path = move_file_safely(
             source_path=processing_video_path,
             destination_folder=completed_folder,
@@ -168,6 +207,7 @@ def process_pending_video(pending_video_path: Path) -> Dict:
             "final_video_path": str(completed_video_path),
             "run_folder": str(run_folder),
             "summary": summary,
+            "narrative": narrative_result,
             "error_message": None,
         }
 
@@ -215,6 +255,7 @@ def process_pending_video(pending_video_path: Path) -> Dict:
             "final_video_path": str(failed_video_path) if failed_video_path else None,
             "run_folder": str(run_folder),
             "summary": None,
+            "narrative": narrative_result,
             "error_message": error_message,
         }
 
@@ -249,7 +290,9 @@ def print_batch_summary(results: List[Dict]) -> None:
         print("Completed files:")
 
         for result in completed_results:
-            print(f"- {result.get('original_filename')}")
+            narrative = result.get("narrative") or {}
+            narrative_status = narrative.get("status", "not generated")
+            print(f"- {result.get('original_filename')} | narrative: {narrative_status}")
 
         print("")
 
@@ -270,11 +313,12 @@ def main() -> None:
     """
     Entry point for local batch processing.
 
-    Current Task 5 behavior:
+    Behavior:
     - Create batch folder structure
     - Scan input_videos/pending for .mp4 files
     - Process each pending MP4 file
     - Create a unique output run folder
+    - Automatically generate narrative_summary.json for each successful run
     - Move successful originals to completed
     - Move failed originals to failed
     - Print final batch summary

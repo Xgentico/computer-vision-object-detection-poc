@@ -21,9 +21,10 @@ from config import (
     RUNTIME_SETTINGS_FILE,
 )
 
+from video_web_converter import convert_video_to_browser_mp4
+
 
 # COCO class names used by YOLOv8.
-# These are the driving-profile classes we currently support.
 DEFAULT_CLASS_ID_TO_NAME = {
     0: "person",
     1: "bicycle",
@@ -322,16 +323,12 @@ def process_video_file(
 
     Outputs:
     - processed_video.mp4
+    - processed_video_web.mp4
     - summary.json
     - warnings.json
     - events.csv
-
-    Notes:
-    - This first batch version does not call OpenAI.
-    - Warnings are generated only when a new unique person is detected.
-    - Directional warning logic uses left / center / right.
     """
-    del generate_narrative  # Reserved for a later optional batch enhancement.
+    del generate_narrative
 
     source_video_path = Path(video_path)
     run_output_folder = Path(output_folder)
@@ -358,6 +355,7 @@ def process_video_file(
     run_id = run_output_folder.name
 
     processed_video_path = run_output_folder / "processed_video.mp4"
+    processed_video_web_path = run_output_folder / "processed_video_web.mp4"
     summary_path = run_output_folder / "summary.json"
     warnings_path = run_output_folder / "warnings.json"
     events_path = run_output_folder / "events.csv"
@@ -542,6 +540,28 @@ def process_video_file(
     if video_writer:
         video_writer.release()
 
+    web_video_conversion = {
+        "status": "skipped",
+        "message": "Processed video was not created, so web conversion was skipped.",
+        "output_video_path": str(processed_video_web_path),
+        "error_message": None,
+    }
+
+    if SAVE_PROCESSED_VIDEO and processed_video_path.exists():
+        print("")
+        print("Creating browser-compatible replay video...")
+
+        web_video_conversion = convert_video_to_browser_mp4(
+            input_video_path=str(processed_video_path),
+            output_video_path=str(processed_video_web_path),
+        )
+
+        print(f"Web video conversion status: {web_video_conversion.get('status')}")
+        print(f"Web video path: {processed_video_web_path}")
+
+        if web_video_conversion.get("error_message"):
+            print(f"Web video warning: {web_video_conversion.get('error_message')}")
+
     summary = {
         "run_id": run_id,
         "original_filename": source_video_path.name,
@@ -564,6 +584,8 @@ def process_video_file(
         "total_detection_counts": total_detection_counts,
         "warnings_generated": len(warning_events),
         "processed_video_path": str(processed_video_path),
+        "processed_video_web_path": str(processed_video_web_path),
+        "web_video_conversion": web_video_conversion,
         "summary_path": str(summary_path),
         "warnings_path": str(warnings_path),
         "events_path": str(events_path),

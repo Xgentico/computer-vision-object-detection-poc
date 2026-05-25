@@ -80,7 +80,7 @@ LLM_WARNING_DISPLAY_FRAMES = 30
 # OPENAI NARRATIVE SUMMARY SETTINGS
 # =========================
 
-# This controls the end-of-run narrative summary.
+# This controls narrative summaries.
 # If OPENAI_API_KEY is not present, the app should fall back
 # to a local summary.
 OPENAI_ENABLED = bool(OPENAI_API_KEY)
@@ -94,7 +94,7 @@ OPENAI_NARRATIVE_MODEL = "gpt-4o-mini"
 # Existing service code may expect this name.
 OPENAI_MODEL = OPENAI_NARRATIVE_MODEL
 
-# Maximum target length for the generated run narrative.
+# Maximum target length for generated narratives.
 OPENAI_NARRATIVE_MAX_WORDS = 120
 
 # Maximum number of warning events to send to OpenAI.
@@ -119,7 +119,7 @@ RUNTIME_SETTINGS_FILE = "runtime_settings.json"
 # =========================
 
 # Batch mode lets the user drop multiple MP4 files into a folder
-# and process them one by one from the terminal.
+# and process them one by one from the dashboard or terminal.
 BATCH_MODE_ENABLED = True
 
 INPUT_VIDEOS_FOLDER = "input_videos"
@@ -138,6 +138,7 @@ SAVE_EVENTS_CSV = True
 SAVE_WARNINGS_JSON = True
 SAVE_SUMMARY_JSON = True
 
-# Batch mode should not call OpenAI by default.
-# The current dashboard can still call OpenAI for narrative summaries.
-BATCH_GENERATE_NARRATIVE_DEFAULT = False
+# Batch mode automatically generates narrative_summary.json
+# after each successfully processed video.
+# If OpenAI is unavailable, a local fallback narrative is still saved.
+BATCH_GENERATE_NARRATIVE_DEFAULT = True
