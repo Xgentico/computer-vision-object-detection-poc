@@ -194,6 +194,7 @@ def normalize_selected_class_ids(selected_class_ids):
 
     # Remove duplicates while preserving order.
     deduped_ids = []
+
     for class_id in normalized_ids:
         if class_id not in deduped_ids:
             deduped_ids.append(class_id)
@@ -240,6 +241,18 @@ def save_runtime_settings(settings):
 
 
 def validate_runtime_settings(settings):
+    """
+    Validate runtime detection settings.
+
+    Important:
+    The selected video path is allowed to be missing.
+
+    Why:
+    - Batch users may configure settings before uploading videos.
+    - Render may not have local sample videos.
+    - Video existence should be checked when starting a live stream,
+      not when saving general detection settings.
+    """
     errors = []
 
     selected_video_path = settings.get("selected_video_path")
@@ -248,10 +261,10 @@ def validate_runtime_settings(settings):
     active_profile = settings.get("active_profile")
     selected_class_ids = settings.get("selected_class_ids")
 
-    if not selected_video_path:
-        errors.append("selected_video_path is required.")
-    elif not video_file_exists(selected_video_path):
-        errors.append(f"Selected video file does not exist: {selected_video_path}")
+    # Keep selected_video_path optional/non-blocking.
+    # We preserve it if present, but do not reject settings if the file is missing.
+    if selected_video_path is None:
+        settings["selected_video_path"] = ""
 
     try:
         confidence_value = float(minimum_confidence)
@@ -324,10 +337,18 @@ def update_runtime_settings(new_values):
 
     save_runtime_settings(updated_settings)
 
+    video_warning = None
+
+    selected_video_path = updated_settings.get("selected_video_path")
+
+    if selected_video_path and not video_file_exists(selected_video_path):
+        video_warning = f"Selected video is not available yet: {selected_video_path}"
+
     return {
         "status": "ok",
         "message": "Runtime settings updated.",
-        "settings": updated_settings
+        "settings": updated_settings,
+        "warning": video_warning
     }
 
 
