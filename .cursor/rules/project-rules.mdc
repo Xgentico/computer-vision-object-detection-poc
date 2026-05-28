@@ -1,0 +1,400 @@
+# Computer Vision Object Detection POC — Cursor Project Rules
+
+## Project Context
+
+This project is a lightweight computer vision proof of concept for processing MP4 video files, detecting configured object classes, generating annotated output videos, saving run summaries, and optionally using an LLM to summarize results or warning events.
+
+The current primary scenario is driving footage, but the architecture must remain modular so the same platform can later support other scenarios such as airports, prison yards, facilities, events, security footage, or drone/object detection.
+
+The project is deployed from GitHub to Render.
+
+## Known Stack
+
+Use these stack assumptions unless the codebase proves otherwise:
+
+* Backend web server / API: FastAPI
+* Local API runner: Uvicorn
+* App entry point: `api.py`
+* FastAPI app variable: `app`
+* Render service type: Web Service
+* Render runtime: Python
+* Render build command: `pip install -r requirements.txt`
+* Render start command: `uvicorn api:app --host 0.0.0.0 --port $PORT`
+* Dependency file: `requirements.txt`
+* UI/dashboard: plain static HTML, CSS, and JavaScript
+* Dashboard file: `static/dashboard.html`
+* Computer vision processing: plain Python scripts
+* Batch processing script: `batch_processor.py`
+* Object detection: YOLOv8 through `ultralytics`
+* Video/image processing: OpenCV
+* Browser-compatible video conversion: `imageio-ffmpeg` / FFmpeg
+* LLM summaries: OpenAI Python SDK
+* OpenAI environment variable: `OPENAI_API_KEY`
+* Source control: GitHub
+* Deployment branch: `main`
+
+## Absolute Safety Rule
+
+Do not edit files automatically.
+
+Before making any file changes, inspect the relevant code, create a plan, and wait until Juan explicitly says:
+
+`approved, make the changes`
+
+A plan alone is not permission to edit files.
+
+This rule applies to code, configuration, dependencies, documentation, Render deployment settings, UI files, and project structure.
+
+## Core Working Rules
+
+* Always inspect the existing code before proposing or making changes.
+* Do not edit files until the explicit approval phrase is given.
+* Preserve existing working behavior unless the requested task explicitly changes it.
+* Prefer small, testable changes over large rewrites.
+* Do not rewrite large files unless specifically asked.
+* Do not remove existing features while adding new ones.
+* Do not invent APIs, folders, config values, environment variables, database fields, or file paths. Verify them from the codebase first.
+* When changing code, explain exactly which files changed and why.
+* After changes, provide clear Windows PowerShell commands for testing.
+* When asked for code, provide full file contents unless Juan specifically asks for a patch or snippet.
+* Be direct about risks, broken assumptions, or incomplete information.
+
+## GitHub and Render Deployment Rules
+
+This project deploys through GitHub and is synced to Render.
+
+Because GitHub is synced to Render, changes pushed to the deployment branch can trigger a Render deployment.
+
+* Treat deployment-impacting changes as high risk.
+* Do not assume local-only paths will work on Render.
+* Do not hard-code absolute Windows paths.
+* Keep file paths portable across Windows local development and Render Linux deployment.
+* Be careful with changes that could break Render startup, environment variables, dependency installation, file paths, ports, static file serving, or build commands.
+* Before making deployment-related changes, inspect:
+
+  * `api.py`
+  * `requirements.txt`
+  * any Render config file if present
+  * environment variable usage
+  * static file paths
+  * startup behavior
+* Preserve this Render start command unless Juan explicitly approves a change:
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port $PORT
+```
+
+* Preserve the Render build command unless Juan explicitly approves a change:
+
+```bash
+pip install -r requirements.txt
+```
+
+* If adding a Python dependency, update `requirements.txt`.
+* If changing startup behavior, explain how the change affects both local development and Render.
+* Never commit secrets, API keys, tokens, private URLs, or credentials.
+* Environment-specific values must be read from environment variables or config files designed for that purpose.
+* If a change requires a new Render environment variable, clearly list:
+
+  * variable name
+  * purpose
+  * whether it is required or optional
+  * where it should be set in Render
+* Do not commit large generated videos, test videos, or output files unless Juan explicitly approves.
+
+## Branch Rules
+
+The deployment branch is `main`.
+
+* Verify the actual branch name before giving Git commands.
+* Do not recommend force pushes.
+* Do not recommend deleting branches unless Juan explicitly asks.
+* Before recommending a push, summarize what will be deployed.
+* Remember that pushing to `main` may trigger a Render deployment.
+
+## FastAPI / API Rules
+
+* The FastAPI app entry point is `api.py`.
+* The FastAPI app object is `app`.
+* Preserve compatibility with the Render start command:
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port $PORT
+```
+
+* Do not rename `api.py` unless Juan explicitly approves.
+* Do not rename the FastAPI app variable unless Juan explicitly approves.
+* Preserve static dashboard serving unless the task explicitly changes it.
+* API endpoints should return clear JSON responses.
+* API errors should be understandable and should not expose secrets or internal stack traces in normal user-facing responses.
+* Long-running video processing should not freeze the UI if there is already a background/batch processing pattern available.
+
+## Static Dashboard Rules
+
+The UI/dashboard is plain static HTML, CSS, and JavaScript served by FastAPI.
+
+The known dashboard file is:
+
+```text
+static/dashboard.html
+```
+
+* Do not assume React, Vite, Streamlit, or Gradio.
+* Do not introduce a frontend framework unless Juan explicitly approves.
+* Keep the dashboard simple and inspectable.
+* Preserve existing dashboard behavior.
+* If adding UI features, prefer plain HTML, CSS, and JavaScript consistent with the existing file.
+* UI changes should gracefully handle missing, incomplete, or older run summary files.
+* UI changes should not require manually opening JSON files to review results.
+* If adding a Selected Run Detail panel, display:
+
+  * selected video
+  * processed output video if available
+  * runtime settings
+  * active profile
+  * detection profile
+  * confidence threshold
+  * frame sampling setting
+  * selected class IDs
+  * detection counts
+  * unique person count
+  * warning events
+  * LLM summary if available
+  * JSON summary reference
+
+## Computer Vision Rules
+
+* Object detection uses YOLOv8 through `ultralytics`.
+* Video/image processing uses OpenCV.
+* Browser-compatible video conversion uses `imageio-ffmpeg` / FFmpeg.
+* Preserve video processing behavior unless the task explicitly changes it.
+* Preserve detection overlays on processed video.
+* Preserve current-frame object counts by class.
+* Preserve the unique person counter unless the task explicitly changes it.
+* Preserve the distinction between:
+
+  * total detection events across frames
+  * current-frame counts
+  * approximate unique-person tracking
+* Do not hard-code detection class IDs directly in generic application logic if they belong in config or detection profiles.
+* Keep detection classes configurable.
+* Keep confidence thresholds configurable.
+* Keep frame-skip or frame-sampling settings configurable.
+* Be careful when changing frame processing logic because frame skipping affects unique-person count accuracy.
+* Any change that affects detection accuracy must explain the expected tradeoff.
+
+## Detection Profile Rules
+
+* Keep detection profiles modular.
+* Scenario-specific class IDs, labels, thresholds, or warning rules should live in profiles or profile-related config when possible.
+* Driving-specific logic should stay in the driving profile or driving-specific configuration.
+* The active profile should be loaded from configuration or runtime settings.
+* Do not mix scenario-specific logic directly into generic video processing code unless Juan approves.
+* New profiles should be easy to add without rewriting the main app.
+* The architecture should support future profiles beyond driving footage.
+
+## Runtime Settings Rules
+
+* Preserve runtime settings behavior.
+* Do not hard-code selected video paths.
+* Do not hard-code confidence thresholds.
+* Do not hard-code frame sampling values.
+* Runtime settings should remain easy to update from the UI or API.
+* Runtime settings should be reflected consistently in:
+
+  * video processing
+  * UI display
+  * JSON run summaries
+  * logs or status messages where applicable
+
+## Batch Processing Rules
+
+Batch processing is handled by:
+
+```text
+batch_processor.py
+```
+
+* Preserve single-video processing while adding or changing batch processing.
+* Batch processing should be modular and should not break the normal dashboard workflow.
+* A bulk MP4 processing folder should not block the normal single-video workflow.
+* Background processing should track status per file where practical.
+* Each processed file should have its own run summary.
+* Each processed file should preserve references to:
+
+  * original video
+  * processed video
+  * warnings
+  * summary
+  * settings used
+* Avoid designs that require manually opening JSON files to understand results.
+* If batch processing is changed, explain how to test it locally with Windows PowerShell.
+
+## Output and Run Summary Rules
+
+* Preserve timestamped JSON run summaries in the outputs folder or the verified existing output location.
+* JSON summaries should include enough information to compare runs across settings.
+* Preserve fields for active profile and detection profile when available.
+* Preserve selected video information when available.
+* Preserve confidence threshold, frame sampling, selected class IDs, and detection counts in run summaries when available.
+* When adding warning logic, warning events must be saved in the run summary.
+* When adding LLM summaries, keep raw detection facts separate from LLM interpretation.
+* LLM-generated content must never replace the actual detection facts.
+* JSON output should remain machine-readable and stable enough for future UI panels, reports, or database persistence.
+* Changes to JSON summary structure should be backward-compatible when practical.
+
+## Warning Event Rules
+
+* Detection logic should decide when a warning event exists.
+* Warning events should be structured data, not just plain text.
+* Warning events should include useful fields where possible, such as:
+
+  * warning type
+  * object class
+  * frame number or timestamp
+  * confidence
+  * location or side of frame if available
+  * message
+  * severity
+* Warnings should be viewable later from the UI or run summary.
+* Do not allow the LLM to invent warning events that were not supported by detection data.
+
+## LLM / OpenAI Rules
+
+LLM summaries use the OpenAI Python SDK.
+
+The current OpenAI environment variable name is:
+
+```text
+OPENAI_API_KEY
+```
+
+* Treat LLM output as interpretation, not ground truth.
+* The LLM may summarize, explain, or prioritize detection results.
+* The LLM must not invent detections, counts, warnings, or video facts.
+* Prompts should be short, clear, and tied to structured detection data.
+* Include error handling if an OpenAI call fails.
+* The app should still work if LLM integration is disabled, unavailable, or missing an API key.
+* Never expose API keys in code, logs, UI, JSON summaries, or committed files.
+* Do not send unnecessary video data, private files, secrets, or unrelated local context to the LLM.
+* If changing the OpenAI environment variable name, explain the local and Render impact before editing.
+* If the code currently uses another OpenAI variable name, do not silently change it without Juan explicitly approving the code and Render setting update.
+
+## File and Folder Rules
+
+* Do not assume a folder exists without checking or creating it safely.
+* Output folders should be created if missing.
+* Avoid absolute paths.
+* Use portable path handling through Python utilities such as `pathlib` where practical.
+* Keep videos, outputs, profiles, config, static files, and source code clearly separated.
+* Do not commit large video files unless Juan explicitly approves.
+* Do not commit generated outputs unless Juan explicitly approves.
+* Do not create unnecessary nested folder structures.
+
+## Error Handling Rules
+
+* Handle missing video files clearly.
+* Handle missing output folders clearly.
+* Handle invalid runtime settings clearly.
+* Handle missing or invalid profiles clearly.
+* Handle OpenAI/API failures without crashing the core detection workflow.
+* Handle FFmpeg/video conversion failures clearly.
+* Error messages should be understandable to a non-expert user.
+* Logs should help diagnose failures without exposing secrets.
+
+## Testing Rules
+
+After code changes, explain how to test locally using Windows PowerShell.
+
+For backend/API changes, include commands similar to:
+
+```powershell
+python -m uvicorn api:app --reload
+```
+
+or the verified local command used by the repo.
+
+For detection changes, verify:
+
+* app starts successfully
+* video still processes
+* overlay still appears
+* unique person counter still works
+* configured class counts still display
+* JSON summary is created
+* active profile is included in summary when available
+* detection profile is included in summary when available
+* warning events are saved if warning logic is active
+
+For UI changes, verify:
+
+* dashboard loads
+* run history displays
+* selected run detail displays if implemented
+* missing fields do not crash the UI
+* API calls from `static/dashboard.html` still work
+
+For deployment-related changes, verify:
+
+* local startup still works
+* `requirements.txt` is updated if needed
+* Render startup assumptions are documented
+* environment variable changes are clearly listed
+* no secrets are committed
+
+## Code Quality Rules
+
+* Keep functions focused and readable.
+* Prefer explicit names over clever names.
+* Avoid deeply nested logic when simple helper functions would make behavior clearer.
+* Separate generic platform logic from scenario-specific profile logic.
+* Keep configuration separate from business logic where practical.
+* Do not introduce unnecessary frameworks or dependencies.
+* Do not add a database unless Juan approves the architectural change.
+* If proposing a database, explain why JSON summaries are no longer sufficient.
+* Avoid changes that make the project harder to understand for a non-specialist reviewer.
+
+## Documentation Rules
+
+* Update README or docs when setup, runtime behavior, environment variables, API behavior, or deployment behavior changes.
+* Document new settings, profiles, and warning types.
+* Keep instructions friendly to Windows PowerShell users.
+* If a task affects Render deployment, document the Render impact.
+* If adding or changing an endpoint, document how to call it.
+
+## Cursor Behavior Rules
+
+When asked to perform a task:
+
+1. Inspect the relevant files first.
+2. Summarize what exists.
+3. Identify risks or unknowns.
+4. Propose a short implementation plan.
+5. Wait for Juan to say:
+
+`approved, make the changes`
+
+6. Only then edit files.
+7. After editing, summarize:
+
+   * files changed
+   * reason for each change
+   * how to test
+   * risks or follow-up items
+
+Do not skip the approval step.
+
+## Communication Rules
+
+* Be direct and specific.
+* Do not claim something works unless it has been tested or verified from the code.
+* If assumptions are being made, clearly label them.
+* If the codebase is unclear, ask before making risky changes.
+* Before editing, provide a short implementation plan.
+* After editing, provide:
+
+  * files changed
+  * reason for each change
+  * how to test
+  * risks or follow-up items
+* Favor practical engineering guidance over vague AI explanations.

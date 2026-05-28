@@ -1,0 +1,414 @@
+# Safety Review Rules — Computer Vision Object Detection POC
+
+## Purpose
+
+These rules tell Cursor how to review changes for safety, risk, deployment impact, and accidental breakage before and after code modifications.
+
+This project processes video files, uses object detection, saves output files, may call OpenAI, and deploys from GitHub to Render. Cursor must be careful.
+
+## Core Safety Principle
+
+Do not treat a code change as safe just because it runs locally.
+
+Every meaningful change should be reviewed for:
+
+* local development impact
+* Render deployment impact
+* GitHub sync impact
+* file path portability
+* environment variable usage
+* secret exposure
+* video processing behavior
+* detection accuracy
+* output file behavior
+* UI behavior
+* beginner maintainability
+
+## Required Safety Review Before Editing
+
+Before making changes, Cursor must identify:
+
+1. What files may need to change.
+2. Why each file may need to change.
+3. What behavior could break.
+4. Whether the change affects Render.
+5. Whether the change affects detection results.
+6. Whether the change affects JSON summaries.
+7. Whether the change affects the dashboard.
+8. Whether a new dependency or environment variable is needed.
+
+Cursor must then wait for Juan to say:
+
+`approved, make the changes`
+
+No approval means no file edits.
+
+## Scope Safety Rule
+
+Cursor must only change what Juan approved.
+
+* Do not make extra improvements while editing.
+* Do not clean up unrelated code.
+* Do not reformat unrelated sections.
+* Do not rename variables, functions, files, folders, or endpoints unless approved.
+* Do not change working logic outside the approved scope.
+* Do not perform broad refactors unless Juan explicitly approves that refactor.
+* If Cursor notices another issue, mention it as a follow-up item instead of fixing it automatically.
+* If the approved change requires touching an unexpected file, stop and explain why before editing that file.
+
+## Render Deployment Safety
+
+This project deploys from GitHub to Render.
+
+Known Render settings:
+
+* Runtime: Python
+* Service type: Web Service
+* Build command: `pip install -r requirements.txt`
+* Start command: `uvicorn api:app --host 0.0.0.0 --port $PORT`
+* App entry point: `api.py`
+* FastAPI app object: `app`
+* Deployment branch: `main`
+
+Cursor must not change any of these unless Juan explicitly approves.
+
+Before changing deployment-related code, check for risks involving:
+
+* `api.py`
+* `requirements.txt`
+* environment variables
+* static file serving
+* output folder paths
+* video folder paths
+* startup command compatibility
+* Linux path compatibility on Render
+* missing packages on Render
+* long-running request behavior
+* generated video storage behavior
+
+## GitHub Safety
+
+Because GitHub is synced to Render:
+
+* Do not recommend pushing to `main` casually.
+* Before recommending a push, summarize what will be deployed.
+* Do not recommend force push.
+* Do not recommend deleting branches.
+* Do not recommend committing generated videos or output files unless Juan explicitly approves.
+* Do not recommend committing `.env` files.
+* Do not recommend committing API keys or secrets.
+
+## Secret and API Key Safety
+
+The OpenAI environment variable should be:
+
+`OPENAI_API_KEY`
+
+Cursor must never:
+
+* print the actual API key
+* commit the API key
+* write the API key into source code
+* write the API key into `static/dashboard.html`
+* write the API key into JSON run summaries
+* expose the API key in browser JavaScript
+* expose the API key in logs
+* expose the API key in error messages
+
+If OpenAI is called, the call must happen server-side in Python, not directly from browser JavaScript.
+
+## Environment Variable Safety
+
+If a change needs a new environment variable, Cursor must explain:
+
+* variable name
+* purpose
+* whether it is required or optional
+* local setup instructions
+* Render setup instructions
+* what happens if it is missing
+
+The app should fail gracefully or disable optional functionality when optional environment variables are missing.
+
+## File Path Safety
+
+Cursor must use portable file paths.
+
+* Do not hard-code absolute Windows paths.
+* Do not hard-code local user paths such as `C:\Users\...`.
+* Prefer `pathlib.Path` in Python.
+* Make sure paths work on both Windows and Render Linux.
+* Create missing output folders safely.
+* Do not assume folders already exist.
+* Validate file paths before processing.
+* Do not allow unsafe path traversal from user input.
+
+## Uploaded Video Safety
+
+When handling uploaded or selected videos:
+
+* Validate that the file exists before processing.
+* Validate that the file type is expected.
+* Do not assume every file is a valid MP4.
+* Handle corrupt or unsupported videos clearly.
+* Do not crash the app on a bad video.
+* Do not overwrite existing files accidentally.
+* Keep original video references separate from processed output references.
+* Be careful with large files because video processing can be slow and storage-heavy.
+
+## Output File Safety
+
+For generated output files:
+
+* Use predictable but unique filenames.
+* Avoid overwriting prior results.
+* Save run summaries with timestamps or unique IDs.
+* Keep JSON summaries machine-readable.
+* Keep processed video paths and summary paths consistent.
+* Do not save secrets in output files.
+* Do not commit generated output files unless Juan explicitly approves.
+
+## JSON Summary Safety
+
+JSON summaries may be used later by the dashboard, run history, selected run detail panels, or future databases.
+
+When changing JSON output:
+
+* Preserve backward compatibility when practical.
+* Do not remove existing fields without approval.
+* Add new fields in a clear structure.
+* Keep raw detection facts separate from LLM summaries.
+* Keep warning events structured.
+* Include enough settings to compare runs.
+* Handle older JSON files gracefully in the UI.
+
+## Detection Safety
+
+Object detection uses YOLOv8 through `ultralytics`.
+
+Cursor must be careful when changing detection logic.
+
+Before changing detection logic, explain whether the change affects:
+
+* selected class IDs
+* confidence threshold
+* frame skipping
+* current-frame counts
+* total detection events
+* unique person counting
+* warning events
+* video overlay
+* JSON summary counts
+
+Cursor must preserve unique-person counting unless Juan explicitly approves a change to it.
+
+Cursor must preserve multi-class detection unless Juan explicitly approves a change to it.
+
+## Frame Skipping Safety
+
+Frame skipping affects detection accuracy.
+
+When changing frame sampling or frame skipping:
+
+* Explain the accuracy tradeoff.
+* Explain the performance tradeoff.
+* Preserve configurability.
+* Do not hard-code a new frame skip value unless Juan approves.
+* Make sure the run summary records the frame sampling value used.
+
+## Warning Event Safety
+
+Warning events should come from detection logic, not LLM imagination.
+
+A warning event should be supported by actual detection data.
+
+Warning events should include useful structured fields when possible:
+
+* warning type
+* object class
+* frame number
+* timestamp if available
+* confidence
+* position or side of frame if available
+* severity
+* message
+
+The LLM may summarize warning events, but it must not invent them.
+
+## LLM Safety
+
+LLM output is interpretation, not ground truth.
+
+Cursor must preserve this separation:
+
+* Detection logic creates facts.
+* The LLM summarizes or explains facts.
+* The LLM does not create detections.
+* The LLM does not create unsupported warning events.
+
+If OpenAI fails:
+
+* video processing should still work if possible
+* raw detection results should still be saved if possible
+* the dashboard should show a clear message
+* the app should not crash only because the LLM failed
+
+## Browser / Frontend Safety
+
+The dashboard uses:
+
+`static/dashboard.html`
+
+The dashboard is plain HTML, CSS, and JavaScript.
+
+Cursor must not introduce React, Vite, Streamlit, Gradio, or another frontend framework unless Juan explicitly approves.
+
+Frontend safety rules:
+
+* Do not expose API keys in browser code.
+* Do not make direct OpenAI calls from the browser.
+* Handle missing fields in JSON gracefully.
+* Handle older run summaries gracefully.
+* Show clear user-facing error messages.
+* Do not break existing dashboard actions.
+* Keep JavaScript simple and readable.
+
+## Dependency Safety
+
+Do not add new dependencies unless needed.
+
+If a dependency is needed:
+
+1. Explain why the existing dependencies are not enough.
+2. Add it to `requirements.txt`.
+3. Explain local impact.
+4. Explain Render impact.
+5. Explain how to test after installation.
+
+Do not add large or heavy packages casually.
+
+## Batch Processing Safety
+
+Batch processing is handled by:
+
+`batch_processor.py`
+
+When changing batch processing:
+
+* Preserve single-video processing.
+* Do not block the dashboard workflow.
+* Track status per file where practical.
+* Avoid overwriting outputs.
+* Save one summary per processed file.
+* Handle failed files without stopping the entire batch when practical.
+* Make it clear which files succeeded and which failed.
+
+## Error Handling Safety
+
+The app should provide clear errors for:
+
+* missing video files
+* invalid video files
+* missing output folders
+* invalid runtime settings
+* missing detection profile
+* invalid detection profile
+* OpenAI failure
+* missing `OPENAI_API_KEY`
+* FFmpeg conversion failure
+* file permission errors
+* Render startup issues
+
+Errors should help Juan understand the problem without exposing secrets.
+
+## Safety Review After Editing
+
+After editing, Cursor must provide a safety review with this structure:
+
+```text
+Safety review:
+
+1. Scope check
+   - Confirm only approved files/behavior changed.
+
+2. Render risk
+   - Explain whether Render startup or deployment is affected.
+
+3. Secret risk
+   - Confirm no secrets were added or exposed.
+
+4. Detection risk
+   - Explain whether detection behavior changed.
+
+5. Output risk
+   - Explain whether JSON or video outputs changed.
+
+6. UI risk
+   - Explain whether dashboard behavior changed.
+
+7. Test plan
+   - Give simple Windows PowerShell test steps.
+
+8. Remaining risks
+   - List anything Juan should still watch for.
+```
+
+## Testing Safety
+
+After changes, Cursor must give simple Windows PowerShell test commands.
+
+For local API testing, prefer:
+
+```powershell
+python -m uvicorn api:app --reload
+```
+
+For dependency install testing, prefer:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Testing instructions should explain:
+
+* where to run the command
+* what to expect
+* what success looks like
+* what failure might look like
+
+## Beginner Safety
+
+Juan is learning Python.
+
+Cursor should not hide risky changes behind technical language.
+
+Cursor should explain risks simply.
+
+Example:
+
+Instead of saying:
+
+`This may affect asynchronous request lifecycle behavior.`
+
+Say:
+
+`This could make the browser wait too long while the video is processing.`
+
+## Do Not Do These Things
+
+* Do not edit files without explicit approval.
+* Do not make wholesale changes.
+* Do not refactor unrelated code.
+* Do not change deployment settings without approval.
+* Do not expose API keys.
+* Do not commit generated videos unless approved.
+* Do not change environment variable names without approval.
+* Do not change the Render start command without approval.
+* Do not add dependencies without explaining why.
+* Do not let the LLM invent detection facts.
+* Do not break unique-person counting unless Juan approves that change.
+* Do not assume local Windows paths will work on Render.
+
+## Final Rule
+
+If Cursor is unsure whether a change is safe, it must stop and ask Juan before editing.

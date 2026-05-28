@@ -6,7 +6,7 @@ __pycache__/
 *$py.class
 
 # =========================
-# Virtual environment
+# Virtual environments
 # =========================
 .venv/
 venv/
@@ -28,9 +28,12 @@ Thumbs.db
 # Environment / secrets
 # =========================
 .env
+.env.*
+!.env.example
 
 # =========================
 # Runtime settings
+# Local machine settings should not be committed
 # =========================
 runtime_settings.json
 
@@ -41,8 +44,19 @@ runtime_settings.json
 
 # =========================
 # Downloaded model files
+# YOLO model files can be large
 # =========================
 *.pt
+
+# =========================
+# Video files
+# Do not commit local videos or generated videos
+# =========================
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
 
 # =========================
 # Runtime uploads
@@ -55,32 +69,30 @@ uploads/*
 # Batch input folders
 # Keep folders, ignore runtime video files
 # =========================
-input_videos/pending/*
+input_videos/*
+!input_videos/.gitkeep
+!input_videos/pending/
 !input_videos/pending/.gitkeep
-
-input_videos/processing/*
+!input_videos/processing/
 !input_videos/processing/.gitkeep
-
-input_videos/completed/*
+!input_videos/completed/
 !input_videos/completed/.gitkeep
-
-input_videos/failed/*
+!input_videos/failed/
 !input_videos/failed/.gitkeep
 
 # =========================
 # Output folders
-# Keep folders, ignore generated outputs
+# Keep folder, ignore generated outputs
 # =========================
 outputs/*
-!outputs/runs/
-outputs/runs/*
-!outputs/runs/.gitkeep
+!outputs/.gitkeep
 
 # =========================
 # Local demo videos
-# Shared by ZIP, not GitHub
+# Keep folder, ignore local demo files
 # =========================
-videos/*.mp4
+videos/*
+!videos/.gitkeep
 
 # =========================
 # Temporary / misc

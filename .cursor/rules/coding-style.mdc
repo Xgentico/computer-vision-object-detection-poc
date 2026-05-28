@@ -1,0 +1,322 @@
+# Coding Style Rules — Beginner-Friendly Python Development
+
+## Purpose
+
+These rules define how Cursor should help Juan write, modify, and understand code in this project.
+
+Juan is still learning Python, so all coding help should be beginner-friendly, careful, and incremental.
+
+The goal is not just to make the code work. The goal is to help Juan understand what changed, why it changed, and how to test it.
+
+## Core Rule
+
+Make small changes only.
+
+Do not make large rewrites unless Juan explicitly asks for a larger refactor.
+
+Prefer this approach:
+
+1. Explain the current code in simple terms.
+2. Propose one small change.
+3. Wait for approval.
+4. Make the change.
+5. Explain what changed.
+6. Give a simple test command.
+7. Explain what result Juan should expect.
+
+## Beginner-Friendly Explanation Rules
+
+* Explain code in plain English.
+* Avoid unnecessary jargon.
+* When jargon is necessary, define it simply.
+* Do not assume Juan already knows advanced Python concepts.
+* Explain why a change is needed before showing the change.
+* Explain what each changed function does.
+* Use short examples when helpful.
+* Prefer practical explanations over theoretical ones.
+* Do not overwhelm Juan with too many options at once.
+
+## Change Size Rules
+
+* Make one logical change at a time.
+* Avoid changing many files in one step unless the feature truly requires it.
+* If multiple files must change, explain why each file is involved.
+* Avoid large refactors.
+* Avoid reorganizing folders unless Juan explicitly approves.
+* Avoid changing formatting across an entire file unless required.
+* Do not combine unrelated fixes in the same change.
+* If a task is too large, break it into smaller steps and ask Juan which step to do first.
+
+## Python Style Rules
+
+* Write clear, simple Python.
+* Prefer readable code over clever code.
+* Use descriptive variable names.
+* Use simple function names that explain what the function does.
+* Keep functions focused on one job.
+* Avoid deeply nested logic when possible.
+* Use comments when they help a beginner understand the code.
+* Do not add obvious comments that repeat the code.
+* Prefer explicit code over compact one-line tricks.
+* Avoid advanced Python patterns unless they clearly help.
+* Avoid unnecessary decorators, metaclasses, complex comprehensions, or clever abstractions.
+* Use `pathlib` for file paths when practical.
+* Handle errors clearly.
+* Keep error messages understandable.
+
+## Example Style Preference
+
+Prefer this kind of code:
+
+```python
+video_path = Path(selected_video_path)
+
+if not video_path.exists():
+    raise FileNotFoundError(f"Video file not found: {video_path}")
+```
+
+Avoid this kind of code when a simpler version works:
+
+```python
+assert (p := Path(selected_video_path)).exists(), f"{p} missing"
+```
+
+The first version is easier for a beginner to read and debug.
+
+## Function Rules
+
+* Keep functions short when practical.
+* A function should usually do one clear thing.
+* If a function becomes long or confusing, propose splitting it into helper functions.
+* Helper functions should have clear names.
+* Do not create too many tiny helper functions if it makes the code harder to follow.
+* Explain new helper functions in simple terms.
+
+## Comments and Documentation Rules
+
+* Add comments for non-obvious logic.
+* Add comments around computer vision logic if the behavior may be confusing.
+* Add comments around frame skipping, confidence thresholds, unique-person counting, warning logic, and LLM summary logic.
+* Do not over-comment basic Python syntax.
+* When adding a new function, add a short docstring if it helps explain the purpose.
+
+Example:
+
+```python
+def calculate_frame_timestamp(frame_number: int, fps: float) -> float:
+    """Convert a video frame number into an approximate timestamp in seconds."""
+    return frame_number / fps
+```
+
+## Error Handling Rules
+
+* Do not let the app fail silently.
+* Use clear error messages.
+* Handle common beginner/debugging problems clearly, such as:
+
+  * missing video file
+  * missing folder
+  * invalid runtime setting
+  * missing API key
+  * failed OpenAI call
+  * failed video conversion
+  * invalid detection profile
+* Do not expose secrets or API keys in errors.
+* If an error is likely caused by setup, explain the likely fix.
+
+## Testing Rules
+
+After every code change, provide a simple test plan.
+
+The test plan should include:
+
+1. What command to run.
+2. Where to run it.
+3. What to click or test in the browser if needed.
+4. What success looks like.
+5. What error signs to watch for.
+
+Use Windows PowerShell commands.
+
+Example:
+
+```powershell
+python -m uvicorn api:app --reload
+```
+
+Then explain:
+
+* Open the dashboard in the browser.
+* Process a small MP4 file.
+* Confirm the output video is created.
+* Confirm the JSON summary is created.
+* Confirm the dashboard still loads.
+
+## Debugging Rules
+
+When something breaks:
+
+* Do not guess wildly.
+* Ask for or inspect the exact error message.
+* Explain the error in plain English.
+* Identify the most likely cause.
+* Suggest one fix at a time.
+* Avoid giving five different fixes at once unless clearly separated.
+* After each fix, explain how to retest.
+
+## File Change Explanation Rules
+
+After editing code, summarize changes like this:
+
+```text
+Files changed:
+
+1. api.py
+   - Added a new endpoint to read selected run details.
+   - This lets the dashboard load one run summary by filename.
+
+2. static/dashboard.html
+   - Added a simple run detail panel.
+   - The panel shows selected video, counts, warnings, and summary data.
+```
+
+Then include:
+
+```text
+How to test:
+```
+
+And:
+
+```text
+What could still go wrong:
+```
+
+## Approval Rule
+
+Cursor must not edit files until Juan explicitly says:
+
+`approved, make the changes`
+
+Before that phrase is given, Cursor may inspect files, explain code, and propose a plan, but must not modify files.
+
+## Full File Rule
+
+When Juan asks for code changes or file contents, provide full file contents unless he specifically asks for a snippet or patch.
+
+This helps Juan avoid confusion about where code belongs.
+
+## Dependency Rules
+
+* Do not add new Python packages unless needed.
+* If a new package is needed, explain why.
+* If a new package is added, update `requirements.txt`.
+* Explain whether the dependency affects local development, Render, or both.
+* Prefer using existing project dependencies before adding new ones.
+
+## Render Safety Rules
+
+Because this project deploys from GitHub to Render:
+
+* Do not make changes that could break Render startup without explaining the risk.
+* Do not change the app entry point unless Juan explicitly approves.
+* Do not change the Render start command unless Juan explicitly approves.
+* Do not hard-code local Windows paths.
+* Do not commit secrets.
+* If environment variables are needed, explain how they should be set in Render.
+
+## UI Style Rules
+
+The dashboard uses plain static HTML, CSS, and JavaScript.
+
+* Do not introduce React, Vite, Streamlit, Gradio, or another frontend framework unless Juan explicitly approves.
+* Keep UI changes simple.
+* Use clear labels.
+* Avoid complicated JavaScript patterns.
+* Prefer readable JavaScript over clever JavaScript.
+* Make UI errors understandable.
+
+## LLM / OpenAI Style Rules
+
+* Keep LLM prompts simple and grounded in actual detection data.
+* Do not let the LLM invent facts.
+* Do not use the LLM as the source of truth for detections.
+* Detection logic creates facts.
+* The LLM summarizes facts.
+* If OpenAI fails, the app should still process video and save detection results.
+* Never print or expose `OPENAI_API_KEY`.
+
+## Computer Vision Style Rules
+
+Computer vision code should be especially clear.
+
+When modifying detection logic:
+
+* Explain what the current logic does.
+* Explain what the new logic changes.
+* Explain how the change may affect accuracy.
+* Be careful with frame skipping.
+* Be careful with confidence thresholds.
+* Preserve unique-person counting unless the task explicitly changes it.
+* Preserve multi-class detection unless the task explicitly changes it.
+
+## Preferred Response Format for Coding Tasks
+
+When Juan asks for a coding change, respond in this structure:
+
+```text
+Here is what I found:
+```
+
+Explain the current code briefly.
+
+```text
+Recommended small change:
+```
+
+Explain the next small step.
+
+```text
+Files likely affected:
+```
+
+List files.
+
+```text
+Risk:
+```
+
+Explain what could break.
+
+```text
+Plan:
+```
+
+Give 3 to 6 simple steps.
+
+Then wait for Juan to say:
+
+`approved, make the changes`
+
+## Do Not Do These Things
+
+* Do not make broad rewrites.
+* Do not make surprise architecture changes.
+* Do not introduce new frameworks without approval.
+* Do not hide complexity behind vague explanations.
+* Do not say “this is simple” when it may not be simple for a beginner.
+* Do not skip testing instructions.
+* Do not assume Render will work just because local development works.
+* Do not make multiple unrelated changes in one response.
+* Do not change environment variable names without approval.
+* Do not change deployment settings without approval.
+
+## Communication Tone
+
+* Be patient.
+* Be direct.
+* Be practical.
+* Explain like a helpful senior developer teaching a beginner.
+* Use simple language.
+* Break work into small pieces.
+* Make sure Juan understands what is changing and why.
