@@ -1065,11 +1065,14 @@
         async function fetchJson(endpoint, options = {}) {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error(`API request failed: ${endpoint}`);
+                const errorMessage = data.message || data.detail || `API request failed: ${endpoint}`;
+                throw new Error(errorMessage);
             }
 
-            return await response.json();
+            return data;
         }
 
         function safeValue(value, fallback = "not available") {
@@ -1224,8 +1227,11 @@
                         <td><strong>${formatNumber(run.unique_persons)}</strong></td>
                         <td><span class="pill pill-red">${formatNumber(run.warnings_generated)}</span></td>
                         <td>
-                            <button class="secondary-button small-button" onclick="loadBatchRunDetail('${safeValue(run.run_id, "")}')">
+                            <button class="secondary-button small-button" onclick='loadBatchRunDetail(${JSON.stringify(run.run_id)})'>
                                 Review Run
+                            </button>
+                            <button class="danger-button small-button" onclick='deleteBatchRun(${JSON.stringify(run.run_id)})'>
+                                Delete
                             </button>
                         </td>
                     </tr>
@@ -1235,6 +1241,111 @@
             html += "</table>";
 
             container.innerHTML = html;
+        }
+
+        function clearBatchReviewPanel() {
+            selectedBatchRun = null;
+            selectedBatchTab = "summary";
+            batchReplayLoaded = false;
+
+            const container = document.getElementById("batchRunReviewCard");
+            container.innerHTML = `
+                <div class="empty-warning-state">
+                    Select <strong>Review Run</strong> from the table on the left.
+                </div>
+            `;
+        }
+
+        async function deleteBatchRun(runId) {
+            if (!runId) {
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Delete this batch run and all associated files?\n\n" +
+                "This removes the output folder, summary files, processed videos, and the original uploaded video if no other runs use it.\n\n" +
+                "This cannot be undone."
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const data = await fetchJson(`/batch/runs/${encodeURIComponent(runId)}`, {
+                    method: "DELETE"
+                });
+
+                if (data.status !== "ok") {
+                    setStatus("batchStatusMessage", data.message || "Delete failed.", "error");
+                    return;
+                }
+
+                if (selectedBatchRun && selectedBatchRun.run_id === runId) {
+                    clearBatchReviewPanel();
+                }
+
+                let statusMessage = data.message || "Batch run deleted.";
+
+                if (data.skipped && data.skipped.length > 0) {
+                    statusMessage += " Skipped: " + data.skipped.join(" ");
+                }
+
+                setStatus("batchStatusMessage", statusMessage, data.status === "ok" ? "ok" : "error");
+
+                await loadBatchStatus();
+
+            } catch (error) {
+                setStatus("batchStatusMessage", error.message, "error");
+            }
+        }
+
+        async function deleteHistoryRun(filename) {
+            if (!filename) {
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Delete this run and all associated files?\n\n" +
+                "This removes the run summary, linked narrative files, and the source video if no other runs use it.\n\n" +
+                "This cannot be undone."
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const data = await fetchJson(`/runs/${encodeURIComponent(filename)}`, {
+                    method: "DELETE"
+                });
+
+                if (data.status !== "ok") {
+                    const historyDiv = document.getElementById("runHistoryCard");
+                    historyDiv.innerHTML = `<p class="status-error">${data.message || "Delete failed."}</p>`;
+                    return;
+                }
+
+                await loadRunHistory();
+
+                let statusMessage = data.message || "Run deleted.";
+
+                if (data.skipped && data.skipped.length > 0) {
+                    statusMessage += " Skipped: " + data.skipped.join(" ");
+                }
+
+                const historyDiv = document.getElementById("runHistoryCard");
+                if (historyDiv) {
+                    historyDiv.insertAdjacentHTML(
+                        "afterbegin",
+                        `<p class="${data.status === "ok" ? "status-ok" : "status-error"}">${statusMessage}</p>`
+                    );
+                }
+
+            } catch (error) {
+                const historyDiv = document.getElementById("runHistoryCard");
+                historyDiv.innerHTML = `<p class="status-error">${error.message}</p>`;
+            }
         }
 
         function renderBatchReviewShell() {
@@ -2117,10 +2228,20 @@
                         <th>Warnings</th>
                         <th>Total Detections</th>
                         <th>Top Counts</th>
+                        <th>Action</th>
                     </tr>
                 `;
 
                 for (const run of data.runs) {
+                    if (run.error) {
+                        html += `
+                            <tr>
+                                <td colspan="11">${safeValue(run.error, "Invalid run file")}</td>
+                            </tr>
+                        `;
+                        continue;
+                    }
+
                     const counts = run.total_detection_counts || {};
                     const totalDetections = calculateTotalDetections(counts);
 
@@ -2148,6 +2269,11 @@
                             <td><span class="pill pill-red">${formatNumber(run.llm_warnings_generated)}</span></td>
                             <td>${formatNumber(totalDetections)}</td>
                             <td>${topCounts}</td>
+                            <td>
+                                <button class="danger-button small-button" onclick='deleteHistoryRun(${JSON.stringify(run.filename)})'>
+                                    Delete
+                                </button>
+                            </td>
                         </tr>
                     `;
                 }

@@ -3,6 +3,7 @@ import json
 import os
 import glob
 import shutil
+import stat
 import threading
 from pathlib import Path
 from datetime import datetime
@@ -321,6 +322,341 @@ def read_csv_preview_if_exists(file_path: Path, max_rows: int = 50):
     return rows
 
 
+OUTPUTS_FOLDER = "outputs"
+
+
+def normalize_path_for_compare(path_value: str) -> str:
+    """
+    Normalize a file path so run references can be compared safely.
+    """
+    if not path_value:
+        return ""
+
+    try:
+        return str(Path(path_value).resolve())
+    except Exception:
+        return str(Path(path_value))
+
+
+def is_valid_stream_run_summary_filename(filename: str) -> bool:
+    return filename.startswith("run_summary_") and filename.endswith(".json")
+
+
+def find_narrative_files_for_stream_run(summary_filename: str):
+    """
+    Find narrative summary files linked to one stream run summary.
+    """
+    narrative_pattern = os.path.join(OUTPUTS_FOLDER, "narrative_summary_*.json")
+    linked_files = []
+
+    for narrative_file in glob.glob(narrative_pattern):
+        try:
+            with open(narrative_file, "r", encoding="utf-8") as file:
+                narrative_data = json.load(file)
+        except Exception:
+            continue
+
+        if narrative_data.get("source_run_filename") == summary_filename:
+            linked_files.append(narrative_file)
+
+    return linked_files
+
+
+def is_video_referenced_by_other_runs(
+    video_path: Path,
+    exclude_batch_run_id: str = None,
+    exclude_stream_summary_filename: str = None,
+) -> bool:
+    """
+    Return True if another batch or stream run still references this video file.
+    """
+    if not video_path:
+        return False
+
+    candidate_path = normalize_path_for_compare(str(video_path))
+    candidate_name = video_path.name
+
+    runs_folder = Path(OUTPUT_RUNS_FOLDER)
+    if runs_folder.exists():
+        for run_folder in runs_folder.iterdir():
+            if not run_folder.is_dir():
+                continue
+
+            if exclude_batch_run_id and run_folder.name == exclude_batch_run_id:
+                continue
+
+            summary_path = run_folder / "summary.json"
+            if not summary_path.exists():
+                continue
+
+            try:
+                summary = read_json_file_if_exists(summary_path, {})
+            except Exception:
+                continue
+
+            original_filename = summary.get("original_filename", "")
+            if original_filename and original_filename == candidate_name:
+                return True
+
+    summary_pattern = os.path.join(OUTPUTS_FOLDER, "run_summary_*.json")
+    for summary_file in glob.glob(summary_pattern):
+        summary_filename = os.path.basename(summary_file)
+
+        if exclude_stream_summary_filename and summary_filename == exclude_stream_summary_filename:
+            continue
+
+        try:
+            with open(summary_file, "r", encoding="utf-8") as file:
+                run_summary = json.load(file)
+        except Exception:
+            continue
+
+        other_video_path = run_summary.get("video_path", "")
+        if not other_video_path:
+            continue
+
+        if normalize_path_for_compare(other_video_path) == candidate_path:
+            return True
+
+        if Path(other_video_path).name == candidate_name:
+            return True
+
+    return False
+
+
+def find_batch_original_video_path(original_filename: str):
+    """
+    Find the original uploaded video for one batch run by filename.
+    """
+    if not original_filename:
+        return None
+
+    search_folders = [
+        INPUT_COMPLETED_FOLDER,
+        INPUT_FAILED_FOLDER,
+        INPUT_PROCESSING_FOLDER,
+        INPUT_PENDING_FOLDER,
+    ]
+
+    for folder_path in search_folders:
+        candidate = Path(folder_path) / original_filename
+        if candidate.exists() and candidate.is_file():
+            return candidate
+
+    return None
+
+
+def delete_file_safely(file_path: Path, deleted_items: list, skipped_items: list):
+    """
+    Delete one file and record the result.
+    """
+    if not file_path or not file_path.exists():
+        return
+
+    try:
+        file_path.unlink()
+        deleted_items.append(str(file_path))
+    except Exception as error:
+        skipped_items.append(f"{file_path} — could not delete: {error}")
+
+
+def remove_readonly_file_error(remove_function, path, error_info):
+    """
+    Clear read-only flags on Windows so folder deletion can continue.
+    """
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        remove_function(path)
+    except Exception:
+        raise error_info[1]
+
+
+def delete_folder_safely(folder_path: Path, deleted_items: list, skipped_items: list) -> bool:
+    """
+    Delete a folder and everything inside it.
+
+    Uses a Windows-friendly retry path when shutil.rmtree hits access errors.
+    """
+    if not folder_path.exists():
+        return True
+
+    try:
+        shutil.rmtree(folder_path, onerror=remove_readonly_file_error)
+        deleted_items.append(str(folder_path))
+        return True
+    except Exception as first_error:
+        try:
+            for item in list(folder_path.rglob("*")):
+                if item.is_file() or item.is_symlink():
+                    try:
+                        os.chmod(item, stat.S_IWRITE)
+                    except Exception:
+                        pass
+                    item.unlink(missing_ok=True)
+                    deleted_items.append(str(item))
+                elif item.is_dir():
+                    try:
+                        item.rmdir()
+                        deleted_items.append(str(item))
+                    except Exception:
+                        pass
+
+            if folder_path.exists():
+                try:
+                    os.chmod(folder_path, stat.S_IWRITE)
+                except Exception:
+                    pass
+
+                folder_path.rmdir()
+                deleted_items.append(str(folder_path))
+                return True
+
+        except Exception as fallback_error:
+            skipped_items.append(
+                f"{folder_path} — could not delete: {fallback_error} (initial error: {first_error})"
+            )
+            return False
+
+    return True
+
+
+def is_batch_run_folder_empty(run_folder: Path) -> bool:
+    """
+    Return True when a batch run folder has no summary and no files.
+    """
+    if not run_folder.exists() or not run_folder.is_dir():
+        return False
+
+    summary_path = run_folder / "summary.json"
+    if summary_path.exists():
+        return False
+
+    return not any(run_folder.iterdir())
+
+
+def cleanup_empty_batch_run_folders():
+    """
+    Remove leftover empty batch run folders that would show as unknown in the UI.
+    """
+    runs_folder = Path(OUTPUT_RUNS_FOLDER)
+    if not runs_folder.exists():
+        return
+
+    deleted_items = []
+    skipped_items = []
+
+    for run_folder in runs_folder.iterdir():
+        if not run_folder.is_dir():
+            continue
+
+        if is_batch_run_folder_empty(run_folder):
+            delete_folder_safely(run_folder, deleted_items, skipped_items)
+
+
+def delete_batch_run_folder(run_id: str):
+    """
+    Delete one batch output run folder and related files.
+    """
+    deleted_items = []
+    skipped_items = []
+
+    run_folder = get_safe_batch_run_folder(run_id)
+    if run_folder is None:
+        return {
+            "status": "not_found",
+            "message": f"Batch run not found: {run_id}",
+            "deleted": deleted_items,
+            "skipped": skipped_items,
+        }
+
+    summary = read_json_file_if_exists(run_folder / "summary.json", {})
+    original_filename = summary.get("original_filename", "")
+    original_video_path = find_batch_original_video_path(original_filename)
+
+    folder_deleted = delete_folder_safely(run_folder, deleted_items, skipped_items)
+    if not folder_deleted:
+        return {
+            "status": "error",
+            "message": f"Could not delete batch run folder: {run_id}",
+            "deleted": deleted_items,
+            "skipped": skipped_items,
+        }
+
+    if original_video_path:
+        if is_video_referenced_by_other_runs(
+            original_video_path,
+            exclude_batch_run_id=run_id,
+        ):
+            skipped_items.append(
+                f"{original_video_path} — still referenced by other runs"
+            )
+        else:
+            delete_file_safely(original_video_path, deleted_items, skipped_items)
+
+    return {
+        "status": "ok",
+        "message": f"Batch run deleted: {run_id}",
+        "run_id": run_id,
+        "deleted": deleted_items,
+        "skipped": skipped_items,
+    }
+
+
+def delete_stream_run_summary(filename: str):
+    """
+    Delete one stream run summary and linked narrative files.
+    """
+    deleted_items = []
+    skipped_items = []
+
+    if not is_valid_stream_run_summary_filename(filename):
+        return {
+            "status": "error",
+            "message": "Invalid run summary filename.",
+            "deleted": deleted_items,
+            "skipped": skipped_items,
+        }
+
+    summary_path = Path(OUTPUTS_FOLDER) / filename
+    if not summary_path.exists():
+        return {
+            "status": "not_found",
+            "message": f"Run summary file not found: {filename}",
+            "deleted": deleted_items,
+            "skipped": skipped_items,
+        }
+
+    run_summary = read_json_file_if_exists(summary_path, {})
+    video_path_value = run_summary.get("video_path", "")
+    video_path = Path(video_path_value) if video_path_value else None
+
+    for narrative_file in find_narrative_files_for_stream_run(filename):
+        delete_file_safely(Path(narrative_file), deleted_items, skipped_items)
+
+    delete_file_safely(summary_path, deleted_items, skipped_items)
+
+    if video_path and video_path.exists():
+        if is_video_referenced_by_other_runs(
+            video_path,
+            exclude_stream_summary_filename=filename,
+        ):
+            skipped_items.append(
+                f"{video_path} — still referenced by other runs"
+            )
+        else:
+            delete_file_safely(video_path, deleted_items, skipped_items)
+    elif video_path_value:
+        skipped_items.append(f"{video_path_value} — video file not found")
+
+    return {
+        "status": "ok",
+        "message": f"Run summary deleted: {filename}",
+        "filename": filename,
+        "deleted": deleted_items,
+        "skipped": skipped_items,
+    }
+
+
 def get_safe_batch_run_folder(run_id: str):
     """
     Resolve a batch run folder safely under OUTPUT_RUNS_FOLDER.
@@ -358,9 +694,11 @@ def get_batch_output_runs():
     if not runs_folder.exists():
         return []
 
+    cleanup_empty_batch_run_folders()
+
     run_folders = [
         folder for folder in runs_folder.iterdir()
-        if folder.is_dir()
+        if folder.is_dir() and not is_batch_run_folder_empty(folder)
     ]
 
     run_folders = sorted(
@@ -717,13 +1055,24 @@ def get_batch_processed_video(run_id: str):
     }
 
 
+@app.delete("/batch/runs/{run_id}")
+def delete_batch_run(run_id: str):
+    """
+    Delete one batch output run folder and related files.
+
+    The original uploaded video is deleted only when no other runs still
+    reference that file.
+    """
+    return delete_batch_run_folder(run_id)
+
+
 # =========================
 # RUN HISTORY ENDPOINTS
 # =========================
 
 @app.get("/runs")
 def get_run_history():
-    output_folder = "outputs"
+    output_folder = OUTPUTS_FOLDER
 
     if not os.path.exists(output_folder):
         return {
@@ -797,7 +1146,7 @@ def get_run_history():
 
 @app.get("/runs/latest")
 def get_latest_run_summary():
-    output_folder = "outputs"
+    output_folder = OUTPUTS_FOLDER
 
     if not os.path.exists(output_folder):
         return {
@@ -826,11 +1175,21 @@ def get_latest_run_summary():
     }
 
 
+@app.delete("/runs/{filename}")
+def delete_run_by_filename(filename: str):
+    """
+    Delete one stream run summary and linked files.
+
+    The source video is deleted only when no other runs still reference it.
+    """
+    return delete_stream_run_summary(filename)
+
+
 @app.get("/runs/{filename}")
 def get_run_by_filename(filename: str):
-    output_folder = "outputs"
+    output_folder = OUTPUTS_FOLDER
 
-    if not filename.startswith("run_summary_") or not filename.endswith(".json"):
+    if not is_valid_stream_run_summary_filename(filename):
         return {
             "status": "error",
             "message": "Invalid run summary filename."
